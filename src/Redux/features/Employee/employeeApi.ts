@@ -1,40 +1,44 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// 1. מעדכנים את ה-Interface שיתאים ל-DTO מהשרת
 export interface Employee {
   Id?: number;
-  Fullname?: string; // שינינו מ-firstName/lastName
+  Fullname?: string;
   Email: string;
-  PassWord?: string; // שימי לב ל-W הגדולה כמו ב-C#
+  PassWord?: string;
   Role?: string;
   CategoryId?: number;
 }
 
 export const employeeApi = createApi({
   reducerPath: "employeeApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://localhost:7237/api/" }), // הוספת / בסוף לביטחון
+  baseQuery: fetchBaseQuery({ baseUrl: "https://localhost:7237/api/" }),
+  // הגדרת "תגיות" - זה עוזר ל-Redux לדעת מתי הנתונים לא רלוונטיים יותר
+  tagTypes: ["Employee"], 
+  
   endpoints: (builder) => ({
     
     // קבלת כל העובדים
     getAllEmployees: builder.query<Employee[], void>({
       query: () => "Employee",
+      // מסמנים שקריאה זו מספקת נתונים מסוג Employee
+      providesTags: ["Employee"],
     }),
     
-    // קבלת עובד לפי ID
     getEmployeeById: builder.query<Employee, number>({
       query: (id) => `Employee/${id}`,
+      providesTags: (result, error, id) => [{ type: "Employee", id }],
     }),
     
-    // הוספת עובד (הרשמה)
-    addEmployee: builder.mutation<void, any>({ // השתמשתי ב-any כדי לאפשר גמישות בשליחה מהטופס
+    addEmployee: builder.mutation<void, any>({
       query: (newEmp) => ({
         url: "Employee/Register",
         method: "POST",
         body: newEmp,
       }),
+      // ברגע שנוסף עובד, ה-Tag "מתבטל" וזה גורם ל-getAllEmployees לרוץ מחדש אוטומטית
+      invalidatesTags: ["Employee"],
     }),
     
-    // התחברות (Login)
     loginEmployee: builder.mutation<any, any>({ 
       query: (credentials) => ({
         url: "Employee/Login",
@@ -43,21 +47,52 @@ export const employeeApi = createApi({
       }),
     }),
     
-    // עדכון עובד
+    // --- עדכון עובד עם עדכון אופטימי ---
     updateEmployee: builder.mutation<void, { id: number; data: Employee }>({
       query: ({ id, data }) => ({
         url: `Employee/${id}`,
         method: "PUT",
         body: data,
       }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, "Employee"],
+      async onQueryStarted({ id, data }, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          employeeApi.util.updateQueryData('getAllEmployees', undefined, (draft) => {
+            const employee = draft.find((e) => e.Id === id);
+            if (employee) {
+              Object.assign(employee, data); // מעדכן את התצוגה מיד
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo(); // מבטל אם נכשל בשרת
+        }
+      },
     }),
     
-    // מחיקת עובד
+    // --- מחיקת עובד עם עדכון אופטימי ---
     deleteEmployee: builder.mutation<void, number>({
       query: (id) => ({
         url: `Employee/${id}`,
         method: "DELETE",
       }),
+      // אומר ל-Redux שהרשימה הכללית כבר לא תקפה
+      invalidatesTags: ["Employee"],
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        // עדכון אופטימי: מוחקים מהקאש מיד
+        const patchResult = dispatch(
+          employeeApi.util.updateQueryData('getAllEmployees', undefined, (draft) => {
+            return draft.filter((emp) => emp.Id !== id);
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo(); // מחזיר את העובד למסך אם המחיקה בשרת נכשלה
+        }
+      },
     }),
   }),
 });
@@ -66,7 +101,7 @@ export const {
   useGetAllEmployeesQuery,
   useGetEmployeeByIdQuery,
   useAddEmployeeMutation,
-  useLoginEmployeeMutation, // זה ה-Hook שתשתמשי בו בעמוד ה-Login
+  useLoginEmployeeMutation,
   useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,
 } = employeeApi;

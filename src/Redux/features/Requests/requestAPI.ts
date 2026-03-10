@@ -18,7 +18,7 @@ export const requestApi = createApi({
     // בתוך requestApi (בקובץ requestAPI.ts)
 addRequest: builder.mutation<void, { Description: string }>({
     query: (newRequest) => ({
-      url: 'Request',  // ודאי שזה השם ב-C# (בלי s לפי הסווגאר שראינו קודם)
+      url: 'Request',
       method: 'POST',
       body: newRequest, // כאן עובר האובייקט עם ה-description
     }),
@@ -36,10 +36,24 @@ takeRequest: builder.mutation({
     }),
   }),
     // סיום בקשה
-    completeRequest: builder.mutation<void, { requestId: number; employeeId: number }>({
-      query: ({ requestId, employeeId }) => ({
-        url: `Request/CompleteRequest/${requestId}/${employeeId}`,
-        method: "POST",
+    completeRequest: builder.mutation<void, { requestId: number }>({
+      query: ({ requestId }) => ({
+        // כאן מחקנו את ה-employeeId מהסוף!
+        url: `Request/complete/${requestId}`, 
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }),
+    }),
+    getMyTasks: builder.query<any[], void>({ // void כי אנחנו לא שולחים פרמטר!
+      query: () => ({
+        url: `Request/my-tasks`,
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+       
       }),
     }),
   }),
@@ -51,5 +65,6 @@ takeRequest: builder.mutation({
 export const {
   useTakeRequestMutation,
   useCompleteRequestMutation,
-  useAddRequestMutation
+  useAddRequestMutation,
+  useLazyGetMyTasksQuery
 } = requestApi;

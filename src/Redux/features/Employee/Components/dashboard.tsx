@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import * as signalR from "@microsoft/signalr";
 import { jwtDecode } from "jwt-decode";
-import { useCompleteRequestMutation, useTakeRequestMutation } from "../../Requests/requestAPI";
+import { useCompleteRequestMutation, useLazyGetMyTasksQuery, useTakeRequestMutation } from "../../Requests/requestAPI";
 
 export default function Dashboard() {
   const [availableRequests, setAvailableRequests] = useState<any[]>([]);
@@ -12,57 +12,75 @@ export default function Dashboard() {
   const [takeRequestTrigger] = useTakeRequestMutation();  
   const [completeRequestTrigger] = useCompleteRequestMutation();
 
+  const [triggerGetMyTasks] = useLazyGetMyTasksQuery();//זה לטעינת הבקשות שהוא באמצע !
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     let categoryIdFromToken: string | null = null;
-
+  
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
         
-        // שליפת קטגוריה
+        // שליפת קטגוריה מהטוקן
         const catId = decoded.CategoryId || decoded.categoryId || decoded.Category || decoded.category;
         if (catId) {
           categoryIdFromToken = catId.toString();
           setCategory(categoryIdFromToken);
         }
-
-        // שליפת ID עובד (בשביל התצוגה בלבד - השרת יזהה אותך לפי הטוקן)
+  
+        // שליפת מזהה עובד
         const rawEmpId = decoded.nameid || decoded.sub || decoded.id || decoded.unique_name;
         if (rawEmpId) setMyEmployeeId(Number(rawEmpId));
         
       } catch (err) {
-        console.error("שגיאה בפענוח הטוקן:", err);
+        console.error("Error decoding token:", err);
       }
     }
-
+  
+    // טעינת משימות קיימות מהשרת
+    const loadMyTasks = async () => {
+      try {
+        const tasks = await triggerGetMyTasks().unwrap();
+        setMyTasks(tasks); 
+      } catch (err) {
+        console.error("Failed to load existing tasks:", err);
+      }
+    };
+  
+    if (token) {
+      loadMyTasks();
+    }
+  
+    // חיבור SignalR רק אם יש קטגוריה
     if (!categoryIdFromToken) return;
-
+  
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("https://localhost:7237/requestHub")
       .withAutomaticReconnect()
       .build();
-
-    connection.start().then(() => {
-      console.log("SignalR Connected ✅");
-      connection.invoke("JoinCategoryGroup", parseInt(categoryIdFromToken!));
-
-      connection.on("ReceiveNotification", (notification: any) => {
-        setAvailableRequests((prev) => [...prev, notification]);
-      });
-
-      connection.on("RemoveRequestFromUI", (requestId: number) => {
-        setAvailableRequests((prev) => prev.filter(req => (req.requestId || req.id) !== requestId));
-      });
-    }).catch(err => console.error("SignalR Error:", err));
-
-    return () => { connection.stop(); };
-  }, []);
-
+  
+    connection.start()
+      .then(() => {
+        connection.invoke("JoinCategoryGroup", parseInt(categoryIdFromToken!));
+  
+        connection.on("ReceiveNotification", (notification: any) => {
+          setAvailableRequests((prev) => [...prev, notification]);
+        });
+  
+        connection.on("RemoveRequestFromUI", (requestId: number) => {
+          setAvailableRequests((prev) => prev.filter(req => (req.requestId || req.id) !== requestId));
+        });
+      })
+      .catch(err => console.error("SignalR Connection Error:", err));
+  
+    return () => { 
+      connection.stop(); 
+    };
+  }, [triggerGetMyTasks]);
   // --- לקיחת בקשה ---
   const handleTakeRequest = async (request: any) => {
     const rId = request.requestId || request.id || request.RequestId || request.Id;
-    
     if (!rId) {
       alert("שגיאה: לא נמצא מזהה לבקשה.");
       return;
@@ -90,13 +108,16 @@ export default function Dashboard() {
   // --- סיום בקשה ---
   const handleCompleteRequest = async (task: any) => {
     const rId = task.requestId || task.id || task.RequestId || task.Id;
-
+  
     try {
+      // שולחים רק את ה-requestId. ה-API כבר ידאג להדביק את הטוקן ב-Headers
       await completeRequestTrigger({ requestId: rId }).unwrap();
+  
       setMyTasks((prev) => prev.filter(req => (req.requestId || req.id) !== rId));
       alert("המשימה הסתיימה בהצלחה!");
     } catch (err: any) {
-      alert("שגיאה בסיום המשימה.");
+      console.error("Error completing task:", err);
+      alert("שגיאה בסיום המשימה. ודאי שאת מחוברת.");
     }
   };
 
