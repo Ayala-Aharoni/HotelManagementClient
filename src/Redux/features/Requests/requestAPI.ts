@@ -5,66 +5,67 @@ export const requestApi = createApi({
   baseQuery: fetchBaseQuery({ 
     baseUrl: "https://localhost:7237/api/",
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
+      // 1. ננסה להביא את הטוקן של החדר (עבור הטאבלט)
+      const roomToken = localStorage.getItem("roomToken");
+      // 2. ננסה להביא את הטוקן הרגיל (עבור העובדים)
+      const userToken = localStorage.getItem("token");
+    
+      // נשתמש במה שקיים (אם שניהם קיימים, בטאבלט נעדיף את roomToken)
+      const finalToken = roomToken || userToken;
+    
+      if (finalToken) {
+        headers.set("authorization", `Bearer ${finalToken}`);
       }
       return headers;
     },
   }),
   endpoints: (builder) => ({
 
+    addRequest: builder.mutation<void, { Description: string }>({
+      query: (newRequest) => ({
+        url: 'Request', // <--- חזר ליחיד
+        method: 'POST',
+        body: newRequest,
+      }),
+    }),
 
-    // בתוך requestApi (בקובץ requestAPI.ts)
-addRequest: builder.mutation<void, { Description: string }>({
-    query: (newRequest) => ({
-      url: 'Request',
-      method: 'POST',
-      body: newRequest, // כאן עובר האובייקט עם ה-description
+    takeRequest: builder.mutation<void, { requestId: number }>({
+      query: ({ requestId }) => ({
+        url: `Request/take/${requestId}`, // <--- חזר ליחיד
+        method: 'POST',
+      }),
     }),
-  }),
- 
-// בתוך ה-endpoints של requestAPI.ts
-takeRequest: builder.mutation({
-    query: ({ requestId }) => ({
-      // שינוי מ-Requests ל-Request (בדיוק כמו בסווגאר!)
-      url: `Request/take/${requestId}`, 
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    }),
-  }),
-    // סיום בקשה
+
     completeRequest: builder.mutation<void, { requestId: number }>({
       query: ({ requestId }) => ({
-        // כאן מחקנו את ה-employeeId מהסוף!
-        url: `Request/complete/${requestId}`, 
+        url: `Request/complete/${requestId}`, // <--- חזר ליחיד
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       }),
     }),
-    getMyTasks: builder.query<any[], void>({ // void כי אנחנו לא שולחים פרמטר!
-      query: () => ({
-        url: `Request/my-tasks`,
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-       
+
+    // המוטציה החדשה - נשארת כאן אבל עם Request ביחיד
+    rejectToReception: builder.mutation<void, { requestId: number }>({
+      query: ({ requestId }) => ({
+        url: `Request/${requestId}/reassign-to-reception`, // <--- חזר ליחיד
+        method: 'PUT',
       }),
+    }),
+
+    getMyTasks: builder.query<any[], void>({
+      query: () => `Request/my-tasks`, // <--- חזר ליחיד
+    }),
+
+    getAvailableRequests: builder.query<any[], void>({
+      query: () => `Request/available`, // <--- חזר ליחיד
     }),
   }),
-
-  // בתוך requestAPI.ts
-
 });
 
 export const {
   useTakeRequestMutation,
   useCompleteRequestMutation,
   useAddRequestMutation,
-  useLazyGetMyTasksQuery
+  useRejectToReceptionMutation,
+  useLazyGetMyTasksQuery,
+  useLazyGetAvailableRequestsQuery,
 } = requestApi;

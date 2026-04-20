@@ -11,6 +11,8 @@ export default function SimpleAddRequest() {
     try {
       // תיקון: שינינו ל-Description עם D גדולה כדי להתאים ל-C# DTO
       await addRequest({ Description: description }).unwrap();
+      // בתוך CreateRequest.tsx, לפני הקריאה ל-API
+
 
       alert("הבקשה נשלחה! עכשיו השרת מסווג אותה...");
       setDescription(""); 
