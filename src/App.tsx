@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from './Redux/store'; 
-import { jwtDecode } from 'jwt-decode'; // ודאי שייבאת את זה!
+import { jwtDecode } from 'jwt-decode';
 
 import Login from './Redux/features/Employee/Components/LoginForm'; 
 import RegisterEmployee from './Redux/features/Employee/Components/RegisterForm';
@@ -14,14 +14,17 @@ import Setuptablet from './Redux/features/Room/Components/Setuptablet';
 function App() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const token = useSelector((state: RootState) => state.auth.token);
+  
+  // בדיקה בזמן אמת אם המכשיר מוגדר כטאבלט
+  const isTabletSetup = !!localStorage.getItem("roomToken");
 
+  // חילוץ תפקיד מהטוקן
   let isAdmin = false;
   if (token) {
     try {
       const decoded: any = jwtDecode(token);
       const role = decoded.role || decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-      isAdmin = (role === "Admin");
-      console.log("בדיקת אדמין ב-App:", isAdmin);
+      isAdmin = (role === "Admin" || role === "admin");
     } catch (e) {
       isAdmin = false;
     }
@@ -30,49 +33,63 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-
-        {/* --- התחברות --- */}
+        
+        {/* 1. דף הבית - הנתב הראשי */}
         <Route 
-          path="/login" 
-          /* תיקון: אם מחוברת, תבדקי אם לשלוח לאדמין או לעובד */
-          element={!isLoggedIn ? <Login /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/dashboard"} />} 
+          path="/" 
+          element={
+            isTabletSetup 
+              ? <Navigate to="/tablet/requests" replace /> 
+              : isLoggedIn 
+                ? <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace /> 
+                : <Home />
+          } 
+        />
+
+        {/* 2. עולם העובדים והניהול */}
+        <Route 
+          path="/staff/login" 
+          element={!isLoggedIn ? <Login /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace />} 
         />
         
         <Route 
-          path="/register" 
-          element={!isLoggedIn ? <RegisterEmployee /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/dashboard"} />} 
+          path="/staff/register" 
+          element={!isLoggedIn ? <RegisterEmployee /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace />} 
         />
 
-        {/* --- עובד --- */}
         <Route 
-          path="/dashboard" 
-          /* תיקון: מונע מאדמין להיכנס בטעות לדף עובד (ולהפך) */
-          element={isLoggedIn && !isAdmin ? <Dashboard /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/login"} />} 
+          path="/staff/dashboard" 
+          element={isLoggedIn && !isAdmin ? <Dashboard /> : <Navigate to="/staff/login" replace />} 
         />
 
-        {/* --- מנהל --- */}
         <Route 
           path="/admin/dashboard" 
-          /* תיקון: מוודא שרק אדמין נכנס */
-          element={isLoggedIn && isAdmin ? <AdminDashboard /> : <Navigate to="/login" />} 
+          element={isLoggedIn && isAdmin ? <AdminDashboard /> : <Navigate to="/staff/login" replace />} 
         />
 
-
+        {/* 3. עולם הטאבלט (Guest Experience) */}
+        <Route 
+          path="/tablet/setup" 
+          element={<Setuptablet onComplete={() => window.location.href = "/tablet/requests"} />} 
+        />
         
-        
-        <Route path="/add-request" element={<SimpleAddRequest />} /> 
+        <Route 
+          path="/tablet/requests" 
+          element={isTabletSetup ? <SimpleAddRequest /> : <Navigate to="/tablet/setup" replace />} 
+        />
 
-        {/* --- Fallback --- */}
+        {/* 4. הגנה על כל נתיב אחר (Fallback) */}
         <Route 
           path="*" 
-          element={<Navigate to={isLoggedIn ? (isAdmin ? "/admin/dashboard" : "/dashboard") : "/login"} />} 
+          element={
+            isTabletSetup 
+              ? <Navigate to="/tablet/requests" replace /> 
+              : isLoggedIn 
+                ? <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace /> 
+                : <Navigate to="/" replace />
+          } 
         />
 
-
-        <Route>
-        <Route path="/room-setup" element={<Setuptablet onComplete={() => console.log("החדר הוגדר בהצלחה!")} />} />
-        </Route>
       </Routes>
     </Router>
   );

@@ -1,87 +1,103 @@
 import { useState } from "react";
-import { useAddEmployeeMutation } from "../employeeApi";
+import { useLoginEmployeeMutation } from "../employeeApi"; 
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from 'react-redux';
+import { setLogin } from '../authSlice';  
+import { jwtDecode } from 'jwt-decode'; 
+import "./Loginform.css";
 
-export default function RegisterEmployee() {
-  const [formData, setFormData] = useState({
-    Fullname: "",
-    Email: "",
-    PassWord: "",
-    Role: "Employee", // ערך ברירת מחדל שתואם ל-Enum ב-C#
-    CategoryId: 1
-  });
+import staffHeaderImg from "../../../../assets/doors-pict.jpg"; 
 
-  const [addEmployee, { isLoading }] = useAddEmployeeMutation();
+export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // לוגיקה פשוטה להצגת סיסמה
+  const [errorMsg, setErrorMsg] = useState(""); 
+  
+  const [login, { isLoading }] = useLoginEmployeeMutation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const handleChange = (e: any) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      // המרה למספר עבור ה-ID, השאר נשאר מחרוזת
-      [name]: name === "CategoryId" ? parseInt(value) || 0 : value 
-    });
-  };
-
-  const handleSubmit = async (e: any) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(""); 
     try {
-      console.log("שולח לשרת:", formData);
-      await addEmployee(formData).unwrap();
-      
-      alert("העובד נרשם בהצלחה!");
-      // איפוס טופס
-      setFormData({ Fullname: "", Email: "", PassWord: "", Role: "Employee", CategoryId: 1 });
-    } catch (err: any) {
-      console.error("פרטי השגיאה מהקונסול:", err);
-      // אם יש שגיאות ולידציה ספציפיות מהשרת, ננסה להציג אותן
-      const serverErrors = err.data?.errors;
-      if (serverErrors) {
-        const messages = Object.values(serverErrors).flat().join("\n");
-        alert("שגיאת ולידציה:\n" + messages);
-      } else {
-        alert("שגיאה כללית בהרשמה. בדקי את הקונסול.");
+      const response = await login({ Email: email, Password: password }).unwrap();
+      const token = response?.token || response;
+      if (token && typeof token === 'string' && token.startsWith('eyJ')) {
+        dispatch(setLogin({ token }));
+        const decoded: any = jwtDecode(token);
+        const role = decoded.role || decoded.Role || decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        navigate(role === 'Admin' || role === 'admin' ? "/admin/dashboard" : "/dashboard");
       }
+    } catch (err: any) {
+      setErrorMsg("Invalid credentials.");
     }
   };
 
   return (
-    <div style={{ direction: 'rtl', padding: '20px', maxWidth: '450px', margin: '0 auto', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h2 style={{ textAlign: 'center' }}>הרשמת עובד חדש</h2>
-      <form onSubmit={handleSubmit}>
+    <div className="desktop-wrapper">
+      <div className="mobile-frame login-page">
         
-        <div style={{ marginBottom: '10px' }}>
-          <label>שם מלא: </label>
-          <input name="Fullname" type="text" value={formData.Fullname} onChange={handleChange} required style={{ width: '100%' }} />
+        <div className="login-image-header">
+          <button className="back-btn-overlay" onClick={() => navigate("/")}>←</button>
+          <img src={staffHeaderImg} alt="Hotel Staff" className="header-bg-img" />
+          <div className="header-overlay-text">
+            <h1>Staff Portal</h1>
+            <p>SmartStay Management</p>
+          </div>
         </div>
 
-        <div style={{ marginBottom: '10px' }}>
-          <label>אימייל: </label>
-          <input name="Email" type="email" value={formData.Email} onChange={handleChange} required style={{ width: '100%' }} />
-        </div>
+        <div className="login-content-area">
+          <div className="login-intro">
+            <h2>Welcome Back</h2>
+            <p>Please sign in to your workspace</p>
+          </div>
 
-        <div style={{ marginBottom: '10px' }}>
-          <label>סיסמה: </label>
-          <input name="PassWord" type="password" value={formData.PassWord} onChange={handleChange} required style={{ width: '100%' }} placeholder="לפחות 6 תווים, אות ומספר" />
-        </div>
+          <form onSubmit={handleLogin} className="login-form">
+            <div className="input-field">
+              <label>EMAIL</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+                placeholder="name@hotel.com"
+              />
+            </div>
 
-        {/* שדה ה-Role החדש */}
-        <div style={{ marginBottom: '10px' }}>
-          <label>תפקיד: </label>
-          <select name="Role" value={formData.Role} onChange={handleChange} style={{ width: '100%', padding: '5px' }}>
-            <option value="Employee">עובד (Employee)</option>
-            <option value="Admin">מנהל (Admin)</option>
-            <option value="Requester">מבקש (Requester)</option>
-          </select>
-        </div>
+            <div className="input-field password-field">
+              <label>PASSWORD</label>
+              <div className="input-wrapper">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)} 
+                  required 
+                  placeholder="••••••••"
+                />
+                <button 
+                  type="button" 
+                  className="eye-icon" 
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? "👁️‍🗨️" : "👁️"}
+                </button>
+              </div>
+            </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label>מזהה קטגוריה (ID מה-SQL): </label>
-          <input name="CategoryId" type="number" value={formData.CategoryId} onChange={handleChange} required style={{ width: '100%' }} />
-        </div>
+            {errorMsg && <div className="error-msg">{errorMsg}</div>}
 
-        <button type="submit" disabled={isLoading} style={{ width: '100%', padding: '10px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-          {isLoading ? "שולח נתונים..." : "בצע הרשמה"}
-        </button>
-      </form>
+            <button type="submit" disabled={isLoading} className="login-submit-btn">
+              {isLoading ? "Signing in..." : "SIGN IN"}
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <p>© 2026 SmartStay Staff System</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,33 +1,59 @@
 import { useNavigate } from "react-router-dom";
+import "./Home.css";
+import klalipict from "../assets/klali-pict.jpg"; 
+import roompict from "../assets/room-pict.jpg"; 
+
 
 export default function Home() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ padding: '20px', direction: 'rtl', position: 'relative' }}>
-      
-      {/* כפתור הגדרת טאבלט - בפינה למעלה */}
-      <button 
-        onClick={() => navigate("/room-setup")} 
-        style={{ position: 'absolute', top: '10px', left: '10px', padding: '5px' }}
-      >
-        ⚙️ חבר אותי לטאבלט
-      </button>
-
-      <h1>דף בית - מלון</h1>
-      
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '200px' }}>
+    <div className="desktop-wrapper">
+      <div className="mobile-frame">
         
-        {/* כפתור לאורח */}
-        <button onClick={() => navigate("/add-request")} style={{ padding: '10px' }}>
-          כניסת אורח (שליחת בקשה)
+        {/* כפתור הגדרת טאבלט - נסתר ואלגנטי */}
+        <button className="setup-gear" onClick={() => navigate("/tablet/setup")} title="Device Setup">
+          ⚙️
         </button>
 
-        {/* כפתור לעובד */}
-        <button onClick={() => navigate("/login")} style={{ padding: '10px' }}>
-          כניסת עובד (לוגין)
-        </button>
-        
+        <div className="text-header">
+          <span>We Bring</span>
+          <h1>The Best Hotels<br />For You</h1>
+        </div>
+
+        <div className="images-container">
+  {/* תמונה עליונה */}
+  <div className="img-arch-up">
+    {/* כאן את משתמשת בשם שייבאת למעלה */}
+    <img src={roompict} alt="Hotel View" />
+  </div>
+  
+  {/* תמונה תחתונה */}
+  <div className="img-arch-down">
+    {/* וכאן את משתמשת ב-roomPict */}
+    <img src={klalipict} alt="Hotel Room" />
+  </div>
+</div>
+
+        <div className="pagination-dots">
+          <div className="dot"></div>
+          <div className="dot"></div>
+          <div className="dot active"></div>
+        </div>
+
+        <div className="auth-buttons-group">
+          <button className="btn-black" onClick={() => navigate("/staff/login")}>
+            STAFF LOGIN
+          </button>
+          
+          <button className="btn-black" onClick={() => navigate("/tablet/requests")}>
+            TABLET SIGN IN
+          </button>
+        </div>
+
+        <div className="footer-copyright">
+          © 2026 SmartStay System
+        </div>
       </div>
     </div>
   );
