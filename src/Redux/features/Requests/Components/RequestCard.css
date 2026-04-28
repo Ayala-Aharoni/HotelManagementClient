@@ -1,0 +1,96 @@
+.req-card-wrapper {
+    background: white;
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.card-main-layout {
+    display: flex;
+    align-items: center;
+}
+
+.card-img-aside {
+    width: 55px;
+    height: 55px;
+    background: #f1f1f1;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 15px;
+}
+
+.room-num-display {
+    font-weight: 800;
+    font-size: 18px;
+    color: #1c1c1e;
+}
+
+.card-info-area {
+    flex: 1;
+}
+
+.card-top-line {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.request-type-label {
+    font-size: 12px;
+    color: #8e8e93;
+    font-weight: 600;
+}
+
+.request-time-ago {
+    font-size: 12px;
+    color: #8e8e93;
+}
+
+.request-desc-text {
+    margin: 0;
+    font-size: 15px;
+    color: #1c1c1e;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.card-footer-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.action-btn:active {
+    opacity: 0.7;
+}
+
+.primary-black {
+    background: #1c1c1e;
+    color: white;
+}
+
+.outline-gray {
+    background: #f2f2f7;
+    color: #3a3a3c;
+}
+
+.success-green {
+    background: #34c759;
+    color: white;
+}

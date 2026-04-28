@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import * as signalR from "@microsoft/signalr";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,8 +12,12 @@ import {
   useLazyGetAvailableRequestsQuery,
   useRejectToReceptionMutation,
 } from "../../Requests/requestAPI";
+
+import { RequestCard } from "../../Requests/Components/RequestCard";
+import staffHeaderImg from "../../../../assets/doors-pict.jpg";
 import "./dashborad.css";
 
+// לוגיקה ישנה: חישוב זמן יחסי
 const getRelativeTime = (dateString: string, currentTime: number) => {
   if (!dateString) return "";
   const past = new Date(dateString);
@@ -25,6 +30,7 @@ const getRelativeTime = (dateString: string, currentTime: number) => {
   return past.toLocaleDateString("he-IL");
 };
 
+// לוגיקה ישנה: בדיקת תוקף טוקן
 const isTokenExpired = (token: string | null) => {
   if (!token) return true;
   try {
@@ -37,9 +43,7 @@ const isTokenExpired = (token: string | null) => {
     );
     const { exp } = JSON.parse(jsonPayload);
     return exp < Date.now() / 1000;
-  } catch {
-    return true;
-  }
+  } catch { return true; }
 };
 
 export default function Dashboard() {
@@ -47,17 +51,21 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user, token } = useSelector((state: RootState) => state.auth);
 
+  // States - לוגיקה ישנה
   const [availableRequests, setAvailableRequests] = useState<any[]>([]);
   const [myTasks, setMyTasks] = useState<any[]>([]);
-  const [completedTasks, setCompletedTasks] = useState<any[]>([]);
   const [now, setNow] = useState(Date.now());
-  const [activeTab, setActiveTab] = useState<"available" | "mine" | "done">("available");
+  const [activeTab, setActiveTab] = useState<"available" | "mine">("available");
 
+  // API Triggers - שמות מקוריים מהלוגיקה הישנה
   const [takeRequestTrigger] = useTakeRequestMutation();
   const [completeRequestTrigger] = useCompleteRequestMutation();
   const [rejectToReceptionTrigger] = useRejectToReceptionMutation();
   const [triggerGetMyTasks] = useLazyGetMyTasksQuery();
   const [triggerGetAvailable] = useLazyGetAvailableRequestsQuery();
+
+  const userName = user?.name || user?.full_name || "משתמש";
+  const departmentName = user?.CategoryId || user?.categoryId || "כללי";
 
   const handleLogout = () => {
     dispatch(setLogout());
@@ -79,27 +87,25 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const tasks = await triggerGetMyTasks().unwrap();
+        // פילטור לפי הלוגיקה הישנה
         setMyTasks(tasks.filter((t: any) => t.status === "InProgress"));
-        setCompletedTasks(tasks.filter((t: any) => t.status === "Completed"));
         const available = await triggerGetAvailable().unwrap();
         setAvailableRequests(available);
       } catch (err: any) {
         if (err.status === 401) handleLogout();
       }
     };
-
     fetchData();
 
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://localhost:7237/requestHub", {
-        accessTokenFactory: () => token,
-      })
+      .withUrl("https://localhost:7237/requestHub", { accessTokenFactory: () => token })
       .withAutomaticReconnect()
       .build();
 
     connection.start()
       .then(() => {
         connection.invoke("JoinCategoryGroup", parseInt(categoryId));
+        // החזרת הלוגיקה של הוספה לסוף המערך כפי שהיה במקור
         connection.on("ReceiveNotification", (n: any) =>
           setAvailableRequests((prev) => [...prev, n])
         );
@@ -108,20 +114,38 @@ export default function Dashboard() {
             prev.filter((req) => (req.requestId || req.id) !== id)
           )
         );
-      })
-      .catch(console.error);
+      }).catch(console.error);
 
     return () => { connection.stop(); };
   }, [token, user]);
 
   const handleTakeRequest = async (request: any) => {
     const rId = request.requestId || request.id;
+    
     try {
+      // 1. קריאה לשרת
       await takeRequestTrigger({ requestId: rId }).unwrap();
-      setMyTasks((prev) => [...prev, { ...request, status: "InProgress", updatedAt: new Date().toISOString() }]);
-      setAvailableRequests((prev) => prev.filter((req) => (req.requestId || req.id) !== rId));
-    } catch {
-      alert("נכשל בלקיחת בקשה");
+      
+      // 2. עדכון הממשק (רק אם השרת החזיר תשובת הצלחה)
+      setMyTasks((prev) => [
+        ...prev, 
+        { ...request, status: "InProgress", updatedAt: new Date().toISOString() }
+      ]);
+      
+      setAvailableRequests((prev) => 
+        prev.filter((req) => (req.requestId || req.id) !== rId)
+      );
+
+    } catch (err: any) {
+      // 3. כאן הקסם קורה! 
+      // אנחנו בודקים אם יש הודעה מה-AppException שבנינו ב-C#
+      const serverMessage = err.data?.message;
+      
+      if (serverMessage) {
+        alert(serverMessage); // יציג למשל: "עובד אחר כבר לקח את המשימה הזו"
+      } else {
+        alert("אופס... נראה שיש בעיית תקשורת עם השרת.");
+      }
     }
   };
 
@@ -130,10 +154,7 @@ export default function Dashboard() {
     try {
       await completeRequestTrigger({ requestId: rId }).unwrap();
       setMyTasks((prev) => prev.filter((req) => (req.requestId || req.id) !== rId));
-      setCompletedTasks((prev) => [{ ...task, status: "Completed" }, ...prev]);
-    } catch {
-      alert("שגיאה בסיום המשימה");
-    }
+    } catch { alert("שגיאה בסיום המשימה"); }
   };
 
   const handleRejectRequest = async (req: any) => {
@@ -141,145 +162,80 @@ export default function Dashboard() {
     try {
       await rejectToReceptionTrigger({ requestId: rId }).unwrap();
       setAvailableRequests((prev) => prev.filter((r) => (r.requestId || r.id) !== rId));
-    } catch {
-      alert("שגיאה בהעברה לקבלה");
-    }
+    } catch { alert("שגיאה בהעברה לקבלה"); }
   };
 
-  const tabs = [
-    { key: "available", label: "בקשות חדשות", count: availableRequests.length, icon: "🔔" },
-    { key: "mine", label: "בטיפולי", count: myTasks.length, icon: "⚡" },
-    { key: "done", label: "הושלמו", count: completedTasks.length, icon: "✅" },
-  ];
-
   return (
-    <div className="dashboard" dir="rtl">
-      {/* Header */}
-      <header className="dashboard-header">
-        <div className="header-right">
-          <div className="hotel-logo">
-            <span className="logo-icon">🏨</span>
-            <div>
-              <div className="hotel-name">Hotel Ops</div>
-              <div className="header-sub">
-                מחלקה: <strong>{user?.CategoryId || "לא ידוע"}</strong>
-              </div>
+    <div className="page-center-wrapper">
+      <div className="mobile-frame">
+        
+        {/* העיצוב שביקשת (Hero) */}
+        <div className="dashboard-hero">
+          <img src={staffHeaderImg} alt="Header" className="header-bg-img" />
+          <div className="header-top-bar">
+            <div className="dept-tag-pill">מחלקה: {departmentName}</div>
+            <div className="notif-icon-wrapper">
+              <span className="bell-emoji">🔔</span>
+              {availableRequests.length > 0 && (
+                <span className="bell-count-badge">{availableRequests.length}</span>
+              )}
             </div>
           </div>
-        </div>
-        <div className="header-center">
-          <div className="live-clock">
-            <span className="live-dot" />
-            {new Date(now).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+          <div className="header-overlay-text">
+            <h1>היי {userName},</h1>
+            <p>שתהיה משמרת מוצלחת!</p>
           </div>
         </div>
-        <div className="header-left">
-          <div className="user-info">
-            <div className="user-avatar">{(user?.name || "U")[0]}</div>
-            <span className="user-name">{user?.name || "משתמש"}</span>
-          </div>
-          <button className="logout-btn" onClick={handleLogout}>יציאה</button>
-        </div>
-      </header>
 
-      {/* Stats Bar */}
-      <div className="stats-bar">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            className={`stat-card ${activeTab === tab.key ? "active" : ""}`}
-            onClick={() => setActiveTab(tab.key as any)}
+        {/* טאבים - 2 בלבד עם שמות מהלוגיקה הישנה */}
+        <div className="tab-switcher" dir="rtl">
+          <button 
+            className={`tab-item ${activeTab === "available" ? "active" : ""}`} 
+            onClick={() => setActiveTab("available")}
           >
-            <span className="stat-icon">{tab.icon}</span>
-            <div className="stat-info">
-              <span className="stat-count">{tab.count}</span>
-              <span className="stat-label">{tab.label}</span>
-            </div>
-            {tab.count > 0 && tab.key === "available" && (
-              <span className="badge">{tab.count}</span>
-            )}
+            בקשות חדשות
+            {availableRequests.length > 0 && <span className="tab-badge red">{availableRequests.length}</span>}
           </button>
-        ))}
+          <button 
+            className={`tab-item ${activeTab === "mine" ? "active" : ""}`} 
+            onClick={() => setActiveTab("mine")}
+          >
+            בטיפולי
+            {myTasks.length > 0 && <span className="tab-badge gray">{myTasks.length}</span>}
+          </button>
+        </div>
+
+        {/* תוכן - שימוש ב-RequestCard כפי שמופיע בעיצוב */}
+        <main className="content-scroll-area">
+          {activeTab === "available" ? (
+            availableRequests.map((req) => (
+              <RequestCard 
+                key={req.requestId || req.id} 
+                task={req} 
+                now={now} 
+                variant="available"
+                onTake={() => handleTakeRequest(req)}
+                onReject={() => handleRejectRequest(req)}
+              />
+            ))
+          ) : (
+            myTasks.map((task) => (
+              <RequestCard 
+                key={task.requestId || task.id} 
+                task={task} 
+                now={now} 
+                variant="inProgress"
+                onComplete={() => handleCompleteRequest(task)}
+              />
+            ))
+          )}
+        </main>
+
+        {/* כפתור יציאה קטן בתחתית (אופציונלי, כדי שלא יהיה תקוע ב-Hero) */}
+        <button onClick={handleLogout} style={{margin: '10px', background: 'none', border: 'none', color: '#8e8e93', fontSize: '12px', cursor: 'pointer'}}>
+          התנתקות מהמערכת
+        </button>
       </div>
-
-      {/* Content */}
-      <main className="dashboard-main">
-        {activeTab === "available" && (
-          <div className="requests-grid">
-            {availableRequests.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">🎉</div>
-                <p>אין בקשות חדשות כרגע</p>
-              </div>
-            ) : (
-              availableRequests.map((req, i) => (
-                <div key={req.requestId || req.id || i} className="request-card new">
-                  <div className="card-header">
-                    <div className="room-badge">חדר {req.roomNumber || "---"}</div>
-                    <span className="time-tag">{getRelativeTime(req.createdAt, now)}</span>
-                  </div>
-                  <p className="card-desc">{req.description}</p>
-                  <div className="card-actions">
-                    <button className="btn-take" onClick={() => handleTakeRequest(req)}>
-                      קח טיפול
-                    </button>
-                    <button className="btn-reject" onClick={() => handleRejectRequest(req)}>
-                      לא רלוונטי
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {activeTab === "mine" && (
-          <div className="requests-grid">
-            {myTasks.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">😊</div>
-                <p>אין משימות פעילות</p>
-              </div>
-            ) : (
-              myTasks.map((task, i) => (
-                <div key={task.requestId || task.id || i} className="request-card in-progress">
-                  <div className="card-header">
-                    <div className="room-badge teal">חדר {task.roomNumber || "---"}</div>
-                    <span className="time-tag">{getRelativeTime(task.updatedAt || task.createdAt, now)}</span>
-                  </div>
-                  <p className="card-desc">{task.description}</p>
-                  <div className="card-actions">
-                    <button className="btn-done" onClick={() => handleCompleteRequest(task)}>
-                      סיימתי ✓
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {activeTab === "done" && (
-          <div className="requests-grid">
-            {completedTasks.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">📋</div>
-                <p>אין משימות שהושלמו</p>
-              </div>
-            ) : (
-              completedTasks.map((task, i) => (
-                <div key={i} className="request-card done">
-                  <div className="card-header">
-                    <div className="room-badge gray">חדר {task.roomNumber || "---"}</div>
-                    <span className="done-tag">הושלם ✓</span>
-                  </div>
-                  <p className="card-desc">{task.description}</p>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </main>
     </div>
   );
 }

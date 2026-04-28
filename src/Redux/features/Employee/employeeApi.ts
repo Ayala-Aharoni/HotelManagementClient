@@ -1,12 +1,12 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface Employee {
-  Id?: number;
-  Fullname?: string;
-  Email: string;
-  PassWord?: string;
-  Role?: string;
-  CategoryId?: number;
+  employeeId?: number; 
+  fullname?: string;   
+  email: string;       
+  role?: string;      
+  categoryId?: number;
+  isAviable: boolean;
 }
 
 export const employeeApi = createApi({

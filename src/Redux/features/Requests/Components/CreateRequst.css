@@ -1,0 +1,150 @@
+/* Layout & Background */
+body, html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden; 
+    height: 100%;
+    background-color: #f3f4f6;
+    font-family: 'Inter', -apple-system, sans-serif;
+  }
+  
+  .app-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+  }
+  
+  /* Tablet Frame - TALLER & SLIMMER */
+  .mobile-view {
+    width: 390px;      /* הצרנו קצת כדי להדגיש את הגובה */
+    height: 98vh;      /* הכי גבוה שאפשר בלי לצאת מהמסך */
+    background-color: #ffffff;
+    border-radius: 50px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Image Section */
+  .hero-section {
+    position: relative;
+    height: 40%; 
+    width: 100%;
+  }
+  
+  .hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-bottom-left-radius: 90px; /* הקימור היוקרתי */
+  }
+  
+  .overlay-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 30px 40px;
+    color: white;
+    z-index: 2;
+  }
+  
+  .welcome-text {
+    font-size: 38px; /* טקסט גדול ומרשים */
+    font-weight: 800;
+    margin: 0;
+    line-height: 1;
+  }
+  
+  .sub-welcome {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-top: 10px;
+  }
+  
+  /* Content Spacing */
+  .form-content {
+    padding: 10px 35px 20px 35px; /* הצמדנו את הכותרת עוד יותר למעלה */
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    direction: ltr;
+  }
+  
+  .main-title {
+    font-size: 24px;
+    color: #1a1a1a;
+    margin-bottom: 10px; 
+    font-weight: 700;
+  }
+  
+  .request-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* נותן לטופס למלא את המקום הפנוי */
+    gap: 15px;
+  }
+  
+  .styled-textarea {
+    width: 100%;
+    flex: 1; /* מגדיל את שטח הכתיבה למקסימום */
+    min-height: 180px; 
+    padding: 20px;
+    border-radius: 25px;
+    border: 1px solid #f0f0f0;
+    background-color: #f9f9f9;
+    font-size: 17px;
+    resize: none;
+    outline: none;
+    box-sizing: border-box;
+  }
+  
+  .styled-submit-btn {
+    background-color: #1a1a1a;
+    color: white;
+    border: none;
+    padding: 20px;
+    border-radius: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  .styled-submit-btn:active {
+    transform: scale(0.97);
+  }
+  
+  /* Bottom Wrapper - No Scroll */
+  .bottom-wrapper {
+    margin-top: 15px;
+    text-align: center;
+  }
+  
+  .rating-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .rating-label {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 4px;
+  }
+  
+  .app-footer p {
+    font-size: 10px;
+    color: #ddd;
+    margin: 0;
+    letter-spacing: 2px;
+  }

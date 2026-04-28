@@ -2,14 +2,19 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useSelector } from 'react-redux';
 import type { RootState } from './Redux/store'; 
 import { jwtDecode } from 'jwt-decode';
+import { Toaster } from 'react-hot-toast';
+
 
 import Login from './Redux/features/Employee/Components/LoginForm'; 
-import RegisterEmployee from './Redux/features/Employee/Components/RegisterForm';
+import RegisterEmployee from './Redux/features/Employee/pages/RegisterForm';
 import Dashboard from './Redux/features/Employee/Components/dashboard'; 
 import SimpleAddRequest from './Redux/features/Requests/Components/CreateRequest';
 import AdminDashboard from './Redux/features/Admin/Components/Admindashboared';
 import Home from './Pages/HomePage';
 import Setuptablet from './Redux/features/Room/Components/Setuptablet'; 
+import EmployeeList from './Redux/features/Employee/pages/employeelist' ;
+import CategoryList from './Redux/features/Category/Components/CategoryList'; 
+import mainlayot from './Components/layot/mainlayout';
 
 function App() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
@@ -31,67 +36,91 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        
-        {/* 1. דף הבית - הנתב הראשי */}
-        <Route 
-          path="/" 
-          element={
-            isTabletSetup 
-              ? <Navigate to="/tablet/requests" replace /> 
-              : isLoggedIn 
-                ? <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace /> 
-                : <Home />
-          } 
-        />
+    <> {/* זה ה-Fragment שעוטף הכל */}
+      <Toaster 
+        position="bottom-center" 
+        reverseOrder={false} 
+        toastOptions={{
+          duration: 3000, // כמה זמן ההודעה תוצג (3 שניות)
+          style: {
+            fontFamily: 'inherit',
+          },
+        }}
+      />
+      
+      <mainlayot>
 
-        {/* 2. עולם העובדים והניהול */}
-        <Route 
-          path="/staff/login" 
-          element={!isLoggedIn ? <Login /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace />} 
-        />
-        
-        <Route 
-          path="/staff/register" 
-          element={!isLoggedIn ? <RegisterEmployee /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace />} 
-        />
+    
+      <Router>
+        <Routes>
+          {/* 1. דף הבית - הנתב הראשי */}
+          <Route 
+            path="/" 
+            element={
+              isTabletSetup 
+                ? <Navigate to="/tablet/requests" replace /> 
+                : isLoggedIn 
+                  ? <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace /> 
+                  : <Home />
+            } 
+          />
+  
+          {/* 2. עולם העובדים והניהול */}
+          <Route 
+            path="/staff/login" 
+            element={!isLoggedIn ? <Login /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace />} 
+          />
+          
+          <Route 
+            path="/staff/register" 
+            element={!isLoggedIn ? <RegisterEmployee /> : <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace />} 
+          />
+  
+          <Route 
+            path="/staff/dashboard" 
+            element={isLoggedIn && !isAdmin ? <Dashboard /> : <Navigate to="/staff/login" replace />} 
+          />
+  
+          <Route 
+            path="/admin/dashboard" 
+            element={isLoggedIn && isAdmin ? <AdminDashboard /> : <Navigate to="/staff/login" replace />} 
+          />
 
-        <Route 
-          path="/staff/dashboard" 
-          element={isLoggedIn && !isAdmin ? <Dashboard /> : <Navigate to="/staff/login" replace />} 
-        />
 
-        <Route 
-          path="/admin/dashboard" 
-          element={isLoggedIn && isAdmin ? <AdminDashboard /> : <Navigate to="/staff/login" replace />} 
-        />
+{/* דף רשימת העובדים - זה הדף שייפתח כשלובחצים על הכרטיס */}
+<Route path="/admin/employees" element={<EmployeeList/>} />
 
-        {/* 3. עולם הטאבלט (Guest Experience) */}
-        <Route 
-          path="/tablet/setup" 
-          element={<Setuptablet onComplete={() => window.location.href = "/tablet/requests"} />} 
-        />
-        
-        <Route 
-          path="/tablet/requests" 
-          element={isTabletSetup ? <SimpleAddRequest /> : <Navigate to="/tablet/setup" replace />} 
-        />
+<Route path="/admin/categories" element={<CategoryList/>} />
 
-        {/* 4. הגנה על כל נתיב אחר (Fallback) */}
-        <Route 
-          path="*" 
-          element={
-            isTabletSetup 
-              ? <Navigate to="/tablet/requests" replace /> 
-              : isLoggedIn 
-                ? <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace /> 
-                : <Navigate to="/" replace />
-          } 
-        />
-
-      </Routes>
-    </Router>
+{/* דף הרישום שבנינו קודם */}
+<Route path="/admin/register-employee" element={<RegisterEmployee />} />
+  
+          {/* 3. עולם הטאבלט (Guest Experience) */}
+          <Route 
+            path="/tablet/setup" 
+            element={<Setuptablet onComplete={() => window.location.href = "/tablet/requests"} />} 
+          />
+          
+          <Route 
+            path="/tablet/requests" 
+            element={isTabletSetup ? <SimpleAddRequest /> : <Navigate to="/tablet/setup" replace />} 
+          />
+  
+          {/* 4. הגנה על כל נתיב אחר (Fallback) */}
+          <Route 
+            path="*" 
+            element={
+              isTabletSetup 
+                ? <Navigate to="/tablet/requests" replace /> 
+                : isLoggedIn 
+                  ? <Navigate to={isAdmin ? "/admin/dashboard" : "/staff/dashboard"} replace /> 
+                  : <Navigate to="/" replace />
+            } 
+          />
+        </Routes>
+      </Router>
+      </mainlayot>
+    </>
   );
 }
 

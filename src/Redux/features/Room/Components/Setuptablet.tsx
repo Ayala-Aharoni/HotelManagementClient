@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
+import { toast } from 'react-hot-toast';
 import { useSetupRoomMutation } from '../RoomApi';  
-
 const RoomSetup = ({ onComplete }: { onComplete: () => void }) => {
   const [roomNumber, setRoomNumber] = useState('');
   const [setupRoom, { isLoading }] = useSetupRoomMutation();
 
   const handleSetup = async () => {
-    console.log("שולח בקשה לחדר:", roomNumber);
+    // בדיקה בסיסית לפני שבכלל פונים לשרת
+    if (!roomNumber.trim()) {
+      toast.error("נא להזין מספר חדר");
+      return;
+    }
+
     try {
-      const result = await setupRoom({ roomNumber }).unwrap();
-      console.log("הצלחה!", result);
-      onComplete();
-    } catch (err: any) {
-      // זה ידפיס לנו בדיוק מה הבעיה (URL לא נכון, CORS, או שרת כבוי)
-      console.error("טעות ב-RTK Query:", err);
+      const result = await setupRoom({ roomNumber }).unwrap(); 
+      const tokenString = result.token;
+      localStorage.setItem("roomToken", tokenString);
       
+      toast.success(`הטאבלט הוגדר בהצלחה!`);
+      onComplete();
+
+    } catch (err: any) {
+      // 1. בדיקה אם השרת בכלל לא זמין (נפל/כיבוי/בעיית רשת)
       if (err.status === 'FETCH_ERROR') {
-        alert("שגיאת תקשורת: השרת ב-C# לא עונה. בדקי שהוא מופעל!");
-      } else {
-        alert(`שגיאה מהשרת: ${err.status}`);
+        toast.error("השרת לא זמין. וודאי שה-Backend פועל ושאת מחוברת לרשת.");
+        return; // עוצרים כאן
       }
+
+      // 2. בדיקה אם השרת החזיר שגיאה לוגית (כמו AppException מה-C#)
+      const errMsg = err.data?.message || "קרתה שגיאה בלתי צפויה";
+      toast.error(errMsg);
+
+      console.error("פרטי השגיאה לדיבאג:", err);
     }
   };
 

@@ -37,7 +37,13 @@ export default function Login() {
         }
       }
     } catch (err: any) {
-      setErrorMsg("אימייל או סיסמה שגויים.");
+    // אם השרת החזיר תשובה עם הודעה (מה-Middleware שלנו)
+    if (err.data?.message) {
+        setErrorMsg(err.data.message); 
+    } else {
+       
+        setErrorMsg("קרתה שגיאה בחיבור לשרת, נסה שוב מאוחר יותר.");
+    }
     }
   };
 

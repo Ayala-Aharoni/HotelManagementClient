@@ -1,0 +1,32 @@
+/* MainLayout.css */
+
+/* 1. הרקע של כל הדפדפן - האפור שמסביב */
+.main-app-shell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    background-color: #f3f4f6; /* אפור בהיר יוקרתי */
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* מונע סרולינג מיותר של כל הדף */
+}
+
+/* 2. ה"מכשיר" עצמו - הטאבלט הלבן */
+.tablet-frame {
+    width: 390px;           /* רוחב מובייל/טאבלט סטנדרטי */
+    height: 95vh;           /* גובה כמעט מקסימלי */
+    background-color: #ffffff;
+    border-radius: 50px;    /* הפינות המעוגלות מהתמונה שלך */
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); /* צל עמוק ויוקרתי */
+    overflow: hidden;       /* חשוב! גורם לתמונות בפינות להיחתך לפי הקימור */
+    position: relative;
+    display: flex;
+    flex-direction: column; /* מסדר את התוכן מלמעלה למטה */
+}
+
+/* 3. הגדרה גלובלית לתוכן שנכנס פנימה */
+.tablet-frame > * {
+    width: 100%;
+}
