@@ -1,0 +1,24 @@
+/* GlobalStyles.css */
+
+/* הגדרות גובה כדי שהאפליקציה תמיד תתפוס את כל המסך */
+html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden; /* הורג את הגלילה של כל הדפדפן */
+    background-color: #f3f4f6; /* הרקע האפור שמאחורי האפליקציה */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  /* עיצוב גנרי לתמונות בתוך כרטיסי חדרים */
+  .hotel-image-rounded {
+    border-radius: 12px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  .hotel-image-rounded:hover {
+    transform: scale(1.02); /* אפקט קטן כשעוברים עם העכבר */
+  }

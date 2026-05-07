@@ -1,85 +1,188 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Box, Typography, Grid, Avatar, IconButton, 
+  Badge, Button, MenuItem, Select, FormControl, TextField
+} from '@mui/material';
+import { 
+  ArrowBack, NotificationsNone, Add, Search, 
+  AccessTime, CalendarToday 
+} from '@mui/icons-material';
+
 import './employeelist.css'; 
 import { useGetAllEmployeesQuery, type Employee } from '../employeeApi';
-import EmployeeCard from '../Components/employeeCard'; // ייבוא הקומפוננטה החדשה
+import { useGetAllCategoriesQuery } from '../../Category/CategoryAPI';
+import EmployeeCard from '../Components/employeeCard'; 
 
-const EmployeeList: React.FC = () => {
+// ייבוא התמונה - ודאי שהנתיב נכון כמו ב-Login
+import staffHeaderImg from "../../../../assets/doors-pict.jpg";
+
+export default function EmployeeList() {
   const navigate = useNavigate();
-  const { data: employees = [], isLoading, isError } = useGetAllEmployeesQuery();
+  const [currentTime, setCurrentTime] = useState(new Date());
   
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const { data: employees = [], isLoading, isError } = useGetAllEmployeesQuery();
+  const { data: categories } = useGetAllCategoriesQuery();
+
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedDept, setSelectedDept] = useState<string>('all');
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState<boolean>(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp: Employee) => {
       const matchesSearch = emp.fullname?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesDept = selectedDept === 'all' || emp.role === selectedDept; 
-      return matchesSearch && matchesDept;
+      const matchesAvailability = !showOnlyAvailable || emp.isAviable === true;
+      const matchesCategory = selectedCategory === 'all' || emp.categoryId === selectedCategory;
+      return matchesSearch && matchesAvailability && matchesCategory;
     });
-  }, [employees, searchTerm, selectedDept]);
+  }, [employees, searchTerm, showOnlyAvailable, selectedCategory]);
 
-  if (isLoading) return <div className="loading-state">טוען נתונים מהשרת...</div>;
-  if (isError) return <div className="error-state">שגיאה בחיבור ל-API</div>;
+  if (isLoading) return <Box sx={{ p: 5, textAlign: 'center' }}>Loading Staff...</Box>;
 
   return (
-    <div className="employee-container">
-      <div className="phone-frame">
+    <Box sx={{ bgcolor: '#F8F9FA', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* Header עם תמונת הרקע במקום הכחול */}
+      <Box sx={{ 
+        position: 'relative',
+        height: '220px', // גובה ה-Header
+        color: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        overflow: 'hidden',
+        borderRadius: '0 0 40px 40px',
+      }}>
+        {/* התמונה עצמה */}
+        <Box 
+          component="img" 
+          src={staffHeaderImg} 
+          sx={{ 
+            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+            objectFit: 'cover', zIndex: 1 
+          }} 
+        />
         
-        {/* Header */}
-        <div className="header">
-          <div className="header-top">
-            <button className="icon-btn" onClick={() => navigate(-1)}>←</button>
-            <span className="header-title">ניהול צוות</span>
-            <span>🔔</span>
-          </div>
-          <div className="stats-row">
-            <div className="stat-card">
-              <span className="stat-num">{employees.length}</span>
-              <span className="stat-label">סה"כ</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-num green">
-                {employees.filter(e => e.Role !== 'עסוק').length}
-              </span>
-              <span className="stat-label">זמינים</span>
-            </div>
-          </div>
-        </div>
+        {/* שכבת הכהיה (Overlay) כדי שהטקסט יהיה קריא */}
+        <Box sx={{ 
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.7))',
+          zIndex: 2 
+        }} />
 
-        {/* Search */}
-        <div className="search-section">
-          <div className="search-bar">
-            <input 
-              placeholder="חפש עובד..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
+        {/* תוכן ה-Header (טקסט, שעון, אוואטר) */}
+        <Box sx={{ position: 'relative', zIndex: 3, p: 3, pb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <IconButton onClick={() => navigate(-1)} sx={{ color: 'white', p: 0 }}>
+                <ArrowBack />
+              </IconButton>
+              <Avatar sx={{ width: 50, height: 50, border: '2px solid #D4AF37', bgcolor: '#D4AF37' }}>M</Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight="700" sx={{ lineHeight: 1.1 }}>Good Morning,</Typography>
+                <Typography variant="body2" sx={{ opacity: 0.8 }}>Admin Manager</Typography>
+              </Box>
+            </Box>
+            <IconButton sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(5px)' }}>
+              <Badge color="error" variant="dot"><NotificationsNone /></Badge>
+            </IconButton>
+          </Box>
 
-        {/* Staff List - כאן השליחה לקומפוננטה! */}
-        <div className="staff-section">
-          <div className="section-label">רשימת עובדים</div>
-          {filteredEmployees.map((emp) => (
-            <EmployeeCard 
-              key={emp.Id} 
-              employee={emp} 
-              onClick={(id) => navigate(`/admin/staff/${id}`)} 
-            />
-          ))}
-          
-          {filteredEmployees.length === 0 && (
-            <div style={{ textAlign: 'center', color: '#aaa', marginTop: '40px' }}>
-              לא נמצאו עובדים
-            </div>
-          )}
-        </div>
+          <Box sx={{ display: 'flex', gap: 2, px: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <CalendarToday sx={{ fontSize: 14, color: '#D4AF37' }} />
+              <Typography variant="caption" fontWeight="600">
+                {currentTime.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <AccessTime sx={{ fontSize: 14, color: '#D4AF37' }} />
+              <Typography variant="caption" fontWeight="600">
+                {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
-        <div className="fab" onClick={() => navigate('/admin/register-employee')}>+</div>
-      </div>
-    </div>
+      {/* המשך העמוד (חיפוש, רשימה וכו') נשאר אותו דבר בדיוק */}
+      <Box sx={{ p: 2, mt: 1 }}>
+        <TextField
+          fullWidth
+          placeholder="Search for staff..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '15px', bgcolor: 'white' } }}
+          InputProps={{ startAdornment: <Search sx={{ color: 'gray', mr: 1 }} /> }}
+        />
+
+        <Grid container spacing={2}>
+          <Grid item xs={6}>
+            <Button
+              fullWidth
+              variant={showOnlyAvailable ? "contained" : "outlined"}
+              onClick={() => setShowOnlyAvailable(!showOnlyAvailable)}
+              sx={{ 
+                borderRadius: '15px', py: 1.2, fontWeight: 'bold', fontSize: '0.75rem',
+                bgcolor: showOnlyAvailable ? '#1c1c1e' : 'transparent',
+                color: showOnlyAvailable ? 'white' : '#1c1c1e',
+                borderColor: '#1c1c1e',
+                '&:hover': { bgcolor: showOnlyAvailable ? '#333' : 'rgba(0,0,0,0.05)', borderColor: '#1c1c1e' }
+              }}
+            >
+              {showOnlyAvailable ? "Online Only" : "Show Available"}
+            </Button>
+          </Grid>
+          <Grid item xs={6}>
+            <FormControl fullWidth size="small">
+              <Select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                sx={{ borderRadius: '15px', bgcolor: 'white' }}
+              >
+                <MenuItem value="all">All Depts</MenuItem>
+                {categories?.map((cat: any) => (
+                  <MenuItem key={cat.categoryId} value={cat.categoryId}>{cat.categoryName}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Box>
+
+      <Box sx={{ p: 2, flex: 1, overflowY: 'auto' }}>
+        <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2, px: 1, color: '#1A2238' }}>
+          STAFF MEMBERS ({filteredEmployees.length})
+        </Typography>
+        
+        {filteredEmployees.map((emp) => (
+          <EmployeeCard 
+            key={emp.employeeId || emp.id} 
+            employee={emp} 
+            onClick={(id) => navigate(`/admin/staff/${id}`)} 
+          />
+        ))}
+      </Box>
+
+      <Box sx={{ p: 2, bgcolor: 'white', borderTop: '1px solid #eee' }}>
+        <Button
+          fullWidth
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => navigate('/admin/register-employee')}
+          sx={{ 
+            bgcolor: '#1c1c1e', py: 1.8, borderRadius: '18px', fontWeight: 'bold',
+            textTransform: 'none', '&:hover': { bgcolor: '#333' }
+          }}
+        >
+          Add New Staff Member
+        </Button>
+      </Box>
+    </Box>
   );
-};
-
-export default EmployeeList;
+}

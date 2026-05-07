@@ -4,13 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from 'react-redux';
 import { setLogin } from '../authSlice';  
 import { jwtDecode } from 'jwt-decode'; 
-import "./Loginform.css";
+import { 
+  Box, TextField, Button, Typography, IconButton, InputAdornment, Alert 
+} from '@mui/material';
+import { Visibility, VisibilityOff, ArrowBackIosNew } from '@mui/icons-material';
 import staffHeaderImg from "../../../../assets/doors-pict.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // סטייט לעין
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState(""); 
   
   const [login, { isLoading }] = useLoginEmployeeMutation();
@@ -23,94 +26,104 @@ export default function Login() {
     try {
       const response = await login({ Email: email, Password: password }).unwrap();
       const token = response?.token || response;
-
-      if (token && typeof token === 'string' && token.startsWith('eyJ')) {
+      if (token) {
         dispatch(setLogin({ token }));
         const decoded: any = jwtDecode(token);
-        const role = decoded.role || decoded.Role || decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-
-        // ניתוב מדויק לפי App.tsx
-        if (role === 'Admin' || role === 'admin') {
-          navigate("/admin/dashboard"); 
-        } else {
-          navigate("/staff/dashboard"); // התיקון הקריטי כאן
-        }
+        const role = decoded.role || "staff";
+        navigate(role.toLowerCase() === 'admin' ? "/admin/dashboard" : "/staff/dashboard");
       }
     } catch (err: any) {
-    // אם השרת החזיר תשובה עם הודעה (מה-Middleware שלנו)
-    if (err.data?.message) {
-        setErrorMsg(err.data.message); 
-    } else {
-       
-        setErrorMsg("קרתה שגיאה בחיבור לשרת, נסה שוב מאוחר יותר.");
-    }
+      setErrorMsg(err.data?.message || "Login failed. Please check your credentials.");
     }
   };
 
   return (
-    <div className="desktop-wrapper">
-      <div className="mobile-frame login-page">
-        
-        <div className="login-image-header">
-          <button className="back-btn-overlay" onClick={() => navigate("/")}>←</button>
-          <img src={staffHeaderImg} alt="Staff" className="header-bg-img" />
-          <div className="header-overlay-text">
-            <h1>Staff Portal</h1>
-            <p>SmartStay Management</p>
-          </div>
-        </div>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'white' }}>
+      
+      {/* Header Section */}
+      <Box sx={{ position: 'relative', height: '35%', width: '100%' }}>
+        <IconButton 
+          onClick={() => navigate("/")}
+          sx={{ 
+            position: 'absolute', top: 20, left: 20, zIndex: 10,
+            bgcolor: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.5)' }
+          }}
+        >
+          <ArrowBackIosNew sx={{ color: 'white', fontSize: 18 }} />
+        </IconButton>
+        <Box 
+          component="img" 
+          src={staffHeaderImg} 
+          sx={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+        />
+        <Box sx={{ 
+          position: 'absolute', bottom: 0, left: 0, right: 0, top: 0,
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.7))',
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+          p: 3, color: 'white'
+        }}>
+          <Typography variant="h4" sx={{ fontWeight: 800 }}>Staff Portal</Typography>
+          <Typography variant="body2" sx={{ opacity: 0.8 }}>SmartStay Management</Typography>
+        </Box>
+      </Box>
 
-        <div className="login-content-area">
-          <div className="login-intro">
-            <h2>Welcome Back</h2>
-            <p>Please sign in to access your dashboard</p>
-          </div>
+      {/* Form Section */}
+      <Box sx={{ p: 4, flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Welcome Back</Typography>
+          <Typography variant="body2" color="text.secondary">Please sign in to your account</Typography>
+        </Box>
 
-          <form onSubmit={handleLogin} className="login-form">
-            <div className="input-group">
-              <label>EMAIL</label>
-              <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)} 
-                required 
-                placeholder="Enter your work email"
-              />
-            </div>
+        <Box component="form" onSubmit={handleLogin} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
+          
+          <TextField
+            label="Email Address"
+            variant="outlined"
+            fullWidth
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-            <div className="input-group">
-              <label>PASSWORD</label>
-              <div className="password-wrapper" style={{ position: 'relative' }}>
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
-                  placeholder="••••••••"
-                  style={{ width: '100%' }}
-                />
-                <button 
-                  type="button"
-                  className="eye-toggle-btn"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? "👁️‍🗨️" : "👁️"}
-                </button>
-              </div>
-            </div>
+          <TextField
+            label="Password"
+            variant="outlined"
+            type={showPassword ? 'text' : 'password'}
+            fullWidth
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
 
-            {errorMsg && <div className="error-msg">{errorMsg}</div>}
+          <Button 
+            type="submit" 
+            variant="contained" 
+            size="large"
+            disabled={isLoading}
+            sx={{ 
+              py: 2, borderRadius: '12px', fontWeight: 700, bgcolor: '#1c1c1e',
+              '&:hover': { bgcolor: '#333' }
+            }}
+          >
+            {isLoading ? "Signing in..." : "SIGN IN"}
+          </Button>
+        </Box>
 
-            <button type="submit" disabled={isLoading} className="login-submit-btn">
-              {isLoading ? "Signing in..." : "SIGN IN"}
-            </button>
-          </form>
-
-          <div className="login-footer">
-            <p>© 2026 SmartStay Staff System</p>
-          </div>
-        </div>
-      </div>
-    </div>
+        <Typography variant="caption" sx={{ mt: 'auto', textAlign: 'center', color: 'text.disabled' }}>
+          © 2026 SmartStay Staff System
+        </Typography>
+      </Box>
+    </Box>
   );
 }

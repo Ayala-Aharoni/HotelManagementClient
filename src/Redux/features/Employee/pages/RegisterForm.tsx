@@ -5,11 +5,11 @@ import {
   FormControl, Box, Typography, Grid, Alert, 
   InputAdornment, IconButton, CircularProgress 
 } from '@mui/material';
-import { Visibility, VisibilityOff, Save, ArrowBack } from '@mui/icons-material';
+import { Visibility, VisibilityOff, ArrowBackIosNew } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAddEmployeeMutation } from '../employeeApi';
 import { useGetAllCategoriesQuery } from '../../Category/CategoryAPI';
-import staffHeaderImg from "../../../../assets/doors-pict.jpg"; // ודאי שהנתיב נכון
+import staffHeaderImg from "../../../../assets/doors-pict.jpg";
 
 export default function RegisterEmployee() {
   const navigate = useNavigate();
@@ -23,9 +23,10 @@ export default function RegisterEmployee() {
     categoryId: ''
   });
 
-  const [register, { isLoading, isError, error, isSuccess }] = useAddEmployeeMutation();
+  const [register, { isLoading, isError, isSuccess }] = useAddEmployeeMutation();
   const { data: categories, isLoading: loadingCats } = useGetAllCategoriesQuery();
 
+  // --- הפונקציה המקורית שלך ללא שינוי פסיק! ---
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
   
@@ -48,95 +49,105 @@ export default function RegisterEmployee() {
       console.error("Registration Error:", err);
   
       const errorMessage = 
-        (typeof err.data === 'string' ? err.data : err.data?.message) || // בודק אם זה מחרוזת או אובייקט
+        (typeof err.data === 'string' ? err.data : err.data?.message) || 
         (err.data?.errors ? Object.values(err.data.errors).flat()[0] : null) || 
         "אירעה שגיאה בתהליך הרישום";
   
       toast.error(errorMessage as string);
     }
   };
+
   return (
-    <Box className="mobile-view" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: 'white' }}>
       
-      {/* Hero Section - בדיוק כמו בתמונה ששלחת */}
-      <Box className="hero-section" sx={{ position: 'relative', height: '35%' }}>
-        <Box className="overlay-content" sx={{ position: 'absolute', zIndex: 2, p: 4, color: 'white' }}>
-           <IconButton onClick={() => navigate(-1)} sx={{ color: 'white', mb: 1, p: 0 }}>
-              <ArrowBack />
-           </IconButton>
-           <Typography variant="h4" fontWeight="800" sx={{ lineHeight: 1.1 }}>
-              Register<br/>New Staff
-           </Typography>
-        </Box>
-        <img 
+      {/* Header Section - Design from Login */}
+      <Box sx={{ position: 'relative', height: '35%', width: '100%' }}>
+        <IconButton 
+          onClick={() => navigate(-1)}
+          sx={{ 
+            position: 'absolute', top: 20, left: 20, zIndex: 10,
+            bgcolor: 'rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.5)' }
+          }}
+        >
+          <ArrowBackIosNew sx={{ color: 'white', fontSize: 18 }} />
+        </IconButton>
+        
+        <Box 
+          component="img" 
           src={staffHeaderImg} 
-          alt="Staff Header" 
-          style={{ width: '100%', height: '100%', objectFit: 'cover', borderBottomLeftRadius: '90px' }} 
+          sx={{ width: '100%', height: '100%', objectFit: 'cover' }} 
         />
+        
+        <Box sx={{ 
+          position: 'absolute', bottom: 0, left: 0, right: 0, top: 0,
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.8))',
+          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+          p: 3, color: 'white'
+        }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+            Register<br/>New Staff
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.8, mt: 1 }}>SmartStay Administration</Typography>
+        </Box>
       </Box>
 
-      {/* Form Content */}
-      <Box sx={{ p: 3, flex: 1, overflowY: 'auto' }}>
-        {isSuccess && <Alert severity="success" sx={{ mb: 2, borderRadius: '15px' }}>נרשם בהצלחה!</Alert>}
-        {isError && <Alert severity="error" sx={{ mb: 2, borderRadius: '15px' }}>שגיאה ברישום</Alert>}
+      {/* Form Section */}
+      <Box sx={{ p: 4, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>Account Details</Typography>
+          <Typography variant="body2" color="text.secondary">Fill in the information below</Typography>
+        </Box>
 
-        <form onSubmit={handleRegister}>
+        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {isSuccess && <Alert severity="success">נרשם בהצלחה!</Alert>}
+          {isError && <Alert severity="error">שגיאה ברישום</Alert>}
+
+          <TextField
+            fullWidth
+            label="Full Name"
+            variant="outlined"
+            required
+            value={formData.fullname}
+            onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
+          />
+
+          <TextField
+            fullWidth
+            label="Email"
+            type="email"
+            variant="outlined"
+            required
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          />
+
+          <TextField
+            fullWidth
+            label="Password"
+            type={showPassword ? 'text' : 'password'}
+            variant="outlined"
+            required
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          />
+
           <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Full Name"
-                variant="filled"
-                required
-                InputProps={{ disableUnderline: true, sx: { borderRadius: '15px' } }}
-                value={formData.fullname}
-                onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                variant="filled"
-                required
-                InputProps={{ disableUnderline: true, sx: { borderRadius: '15px' } }}
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                variant="filled"
-                required
-                InputProps={{
-                  disableUnderline: true,
-                  sx: { borderRadius: '15px' },
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
-            </Grid>
-
             <Grid item xs={6}>
-              <FormControl fullWidth variant="filled">
+              <FormControl fullWidth variant="outlined">
                 <InputLabel>Role</InputLabel>
                 <Select
+                  label="Role"
                   value={formData.role}
-                  disableUnderline
-                  sx={{ borderRadius: '15px' }}
                   onChange={(e) => setFormData({ ...formData, role: Number(e.target.value) })}
                 >
                   <MenuItem value={0}>Admin</MenuItem>
@@ -146,12 +157,11 @@ export default function RegisterEmployee() {
             </Grid>
 
             <Grid item xs={6}>
-              <FormControl fullWidth variant="filled">
+              <FormControl fullWidth variant="outlined">
                 <InputLabel>Department</InputLabel>
                 <Select
+                  label="Department"
                   value={formData.categoryId}
-                  disableUnderline
-                  sx={{ borderRadius: '15px' }}
                   required
                   onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                 >
@@ -163,26 +173,20 @@ export default function RegisterEmployee() {
                 </Select>
               </FormControl>
             </Grid>
-
-            <Grid item xs={12} sx={{ mt: 2 }}>
-              <Button
-                fullWidth
-                variant="contained"
-                type="submit"
-                disabled={isLoading}
-                sx={{ 
-                  bgcolor: '#1a1a1a', 
-                  color: 'white', 
-                  py: 2, 
-                  borderRadius: '20px',
-                  fontWeight: 'bold',
-                  '&:hover': { bgcolor: '#333' }
-                }}
-              >
-                {isLoading ? <CircularProgress size={24} color="inherit" /> : "Complete Registration"}
-              </Button>
-            </Grid>
           </Grid>
+
+          <Button 
+            type="submit" 
+            variant="contained" 
+            size="large"
+            disabled={isLoading}
+            sx={{ 
+              mt: 2, py: 2, borderRadius: '12px', fontWeight: 700, bgcolor: '#1c1c1e',
+              '&:hover': { bgcolor: '#333' }
+            }}
+          >
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : "COMPLETE REGISTRATION"}
+          </Button>
         </form>
       </Box>
     </Box>

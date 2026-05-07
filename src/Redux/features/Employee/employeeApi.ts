@@ -95,7 +95,20 @@ export const employeeApi = createApi({
         }
       },
     }),
+    // --- עדכון סטטוס זמינות עובד ---
+  // --- עדכון סטטוס זמינות עובד ---
+// --- עדכון סטטוס זמינות עובד ---
+updateEmployeeStatus: builder.mutation<void, { id: number; isAvailable: boolean }>({
+  query: ({ id, isAvailable }) => ({
+    url: `Employee/${id}/status`,
+    method: "PATCH",
+    // כאן השינוי החשוב! אנחנו שולחים אובייקט שתואם ל-DTO שלך
+    // שימי לב: השם ISAviavle חייב להיות זהה בדיוק למה שכתבת ב-C#
+    body: { ISAviavle: isAvailable }, 
   }),
+  invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, "Employee"],
+}),
+}),
 });
 
 export const {
@@ -105,4 +118,5 @@ export const {
   useLoginEmployeeMutation,
   useUpdateEmployeeMutation,
   useDeleteEmployeeMutation,
+  useUpdateEmployeeStatusMutation
 } = employeeApi;

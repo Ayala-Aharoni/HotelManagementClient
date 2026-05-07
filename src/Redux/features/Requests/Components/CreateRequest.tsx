@@ -1,12 +1,8 @@
 import { useState } from "react";
 import { useAddRequestMutation } from "../../Requests/requestAPI";
-import { Rating, Typography, Box } from "@mui/material";
+import { Rating, Typography, Box, TextField, Button, Container } from "@mui/material";
 import { toast } from 'react-hot-toast';
-
-import "./CreateRequst.css";
 import staffHeaderImg from "../../../../assets/doors-pict.jpg";
-
-
 
 export default function SimpleAddRequest() {
   const [description, setDescription] = useState<string>("");
@@ -15,92 +11,108 @@ export default function SimpleAddRequest() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-    // 1. שליפת המזהה (הטוקן/ID) מהאחסון המקומי
-    const roomId = localStorage.getItem("roomNumber"); // או localStorage.getItem("token") בהתאם למה ששמרת
-  
-    // 2. בדיקה: האם המכשיר בכלל מזוהה? (חייב להיות מזהה כדי לשלוח בקשה)
+    
+    const roomId = localStorage.getItem("roomNumber");
     if (!roomId) {
-      toast.error("תקלה בזיהוי המכשיר. אנא פנה לקבלה להגדרה מחדש.");
-      return; // חסימה! לא פונים לשרת אם אנחנו לא יודעים איזה חדר זה
+      toast.error("תקלה בזיהוי המכשיר. אנא פנה לקבלה.");
+      return;
     }
   
-    // 3. בדיקת תוכן: האם השדה ריק או מכיל רק רווחים?
     if (!description.trim()) {
-      // אם ה-HTML5 required לא קפץ, אנחנו חוסמים כאן
       toast.error("אופס! שכחת לכתוב מה אתה צריך");
       return; 
     }
   
     try {
-      // 4. שליחה לשרת - שימי לב שאנחנו משתמשים ב-roomId ששלפנו למעלה
-      await addRequest({ 
-        Description: description,
-      }).unwrap();
-      
-      // 5. הצלחה וניקוי
+      await addRequest({ Description: description }).unwrap();
       toast.success("הבקשה נשלחה בהצלחה!");
       setDescription(""); 
-  
     } catch (err: any) {
-      // 6. טיפול בשגיאות שחזרו מהשרת (למשל: חדר לא קיים ב-DB)
-      const errorMsg = err.data?.message || "משהו השתבש בשליחה... נסה שוב";
-      toast.error(errorMsg);
+      toast.error(err.data?.message || "משהו השתבש בשליחה...");
     }
   };
 
   return (
-    <div className="app-container">
-      <div className="mobile-view">
+    /* ה-Box הראשי שבו אנחנו "הורגים" את הגלגלת */
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%', 
+      bgcolor: 'white',
+      overflow: 'hidden', // מונע מהכל לצאת החוצה
+      '&::-webkit-scrollbar': { display: 'none' }, // מעלים את הפס בצד לכרום
+      msOverflowStyle: 'none',  // מעלים לאקספלורר
+      scrollbarWidth: 'none',   // מעלים לפיירפוקס
+    }}>
+      
+      {/* Hero Section */}
+      <Box sx={{ position: 'relative', height: '40%', width: '100%', flexShrink: 0 }}>
+        <Box 
+          component="img" src={staffHeaderImg} 
+          sx={{ width: '100%', height: '100%', objectFit: 'cover', borderBottomLeftRadius: '80px' }} 
+        />
+        <Box sx={{ 
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          bgcolor: 'rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column',
+          justifyContent: 'center', p: 4, color: 'white'
+        }}>
+          <Typography variant="h3" sx={{ fontWeight: 800, lineHeight: 1.1, mb: 1 }}>
+            We're happy to<br/>have you here
+          </Typography>
+          <Typography variant="body1" sx={{ opacity: 0.9 }}>Enjoy your stay with us</Typography>
+        </Box>
+      </Box>
+
+      {/* Content Area */}
+      <Box sx={{ p: 4, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, color: '#1a1a1a' }}>
+          How can we help you?
+        </Typography>
         
-        {/* Hero Section */}
-        <div className="hero-section">
-          <div className="overlay-content">
-            <h1 className="welcome-text">We're happy to<br/>have you here</h1>
-            <p className="sub-welcome">Enjoy your stay with us</p>
-          </div>
-          <img 
-            src={staffHeaderImg} 
-            alt="Hotel Luxury" 
-            className="hero-image"
+        <Box component="form" onSubmit={handleSubmit} sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            multiline
+            rows={5} // הקטנתי ל-5 כדי שלא ילחץ על הלמטה
+            placeholder="Describe your request here..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            variant="outlined"
+            fullWidth
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                bgcolor: '#f9f9f9',
+                borderRadius: '20px',
+                '& fieldset': { borderColor: 'transparent' },
+              }
+            }}
           />
-        </div>
 
-        {/* Content Section */}
-        <div className="form-content">
-          <h2 className="main-title">How can we help you?</h2>
-          
-          <form onSubmit={handleSubmit} className="request-form">
-            <textarea 
-              value={description} 
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe your request here..."
-              required
-              className="styled-textarea"
-            />
-            <button type="submit" disabled={isLoading} className="styled-submit-btn">
-              {isLoading ? "Sending..." : "Send Request"}
-            </button>
-          </form>
+          <Button 
+            type="submit" 
+            variant="contained" 
+            disabled={isLoading}
+            sx={{ 
+              py: 2, borderRadius: '15px', bgcolor: '#1a1a1a', fontWeight: 700,
+              '&:hover': { bgcolor: '#333' }
+            }}
+          >
+            {isLoading ? "Sending..." : "Send Request"}
+          </Button>
+        </Box>
 
-          {/* Footer & Rating */}
-          <div className="bottom-wrapper">
-            <Box className="rating-section">
-              <Typography component="legend" className="rating-label">Enjoying the service?</Typography>
-              <Rating
-                name="hotel-rating"
-                value={rating}
-                precision={0.5}
-                onChange={(event, newValue) => setRating(newValue)}
-              />
-            </Box>
-
-            <footer className="app-footer">
-              <p>© ALL RIGHTS RESERVED TO HOTELAPP 2026</p>
-            </footer>
-          </div>
-        </div>
-      </div>
-    </div>
+        {/* Rating & Footer */}
+        <Box sx={{ mt: 'auto', textAlign: 'center', pt: 2 }}>
+          <Rating
+            value={rating}
+            precision={0.5}
+            onChange={(_, newValue) => setRating(newValue)}
+          />
+          <Typography variant="overline" sx={{ color: '#ddd', display: 'block', mt: 1 }}>
+            © HOTELAPP 2026
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
-}
+  
+    }

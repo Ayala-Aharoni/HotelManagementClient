@@ -7,7 +7,7 @@
     align-items: center;
     width: 100vw;
     height: 100vh;
-    background-color: #f3f4f6; /* אפור בהיר יוקרתי */
+    background-color: #b1b3b8; /* אפור בהיר יוקרתי */
     margin: 0;
     padding: 0;
     overflow: hidden; /* מונע סרולינג מיותר של כל הדף */
@@ -17,7 +17,7 @@
 .tablet-frame {
     width: 390px;           /* רוחב מובייל/טאבלט סטנדרטי */
     height: 95vh;           /* גובה כמעט מקסימלי */
-    background-color: #ffffff;
+    background-color: #f0e4e4;
     border-radius: 50px;    /* הפינות המעוגלות מהתמונה שלך */
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); /* צל עמוק ויוקרתי */
     overflow: hidden;       /* חשוב! גורם לתמונות בפינות להיחתך לפי הקימור */

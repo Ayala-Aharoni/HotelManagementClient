@@ -1,132 +1,74 @@
-.page-center-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100vw;
-  height: 100vh;
-  background-color: #f0f2f5; /* צבע רקע מחוץ למכשיר */
-  margin: 0;
-  padding: 0; /* ביטול רווח לבן סביב המכשיר */
-}
+/* dashborad.css */
 
-.mobile-frame {
-  width: 390px;
-  height: 98vh;
-  background-color: #fff;
-  border-radius: 50px; /* קימור חיצוני של הטאבלט */
+.dashboard-container {
   display: flex;
   flex-direction: column;
-  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  direction: ltr; /* אנגלית */
+  height: 100%; /* ממלא את גובה ה-MainLayout */
+  width: 100%;
+  background-color: #fff;
 }
 
+/* עדכון ה-Hero שייראה טוב ברוחב 500px */
 .dashboard-hero {
   position: relative;
-  height: 35%;
-  min-height: 280px;
+  height: 300px; /* גובה קבוע לטאבלט */
+  width: 100%;
+  flex-shrink: 0; /* מונע מההדר להתכווץ */
 }
 
 .header-bg-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-bottom-left-radius: 90px; /* הקימור היוקרתי של התמונה */
+  /* הורדנו את ה-border-radius של התמונה כי ה-MainLayout כבר מעגל את הפינות */
 }
 
-/* הפעמון והתג שצפים על התמונה */
 .header-top-bar {
   position: absolute;
-  top: 35px;
+  top: 30px;
   left: 25px;
   right: 25px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.dept-tag-pill {
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(12px);
-  padding: 6px 16px;
-  border-radius: 20px;
-  color: #fff;
-  font-weight: 700;
-  font-size: 13px;
-}
-
-.notif-icon-wrapper {
-  position: relative;
-  font-size: 26px;
-}
-
-.bell-count-badge {
-  position: absolute;
-  top: -2px;
-  right: -2px;
-  background: #ff3b30;
-  color: white;
-  font-size: 10px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #fff;
-  font-weight: 800;
+  z-index: 5;
 }
 
 .header-overlay-text {
   position: absolute;
-  bottom: 40px;
-  left: 30px;
+  bottom: 30px;
+  right: 30px; /* שימי לב: העברתי לימין כי זה בעברית */
   color: white;
+  text-align: right;
+  z-index: 5;
 }
 
-.header-overlay-text h1 { font-size: 34px; margin: 0; font-weight: 800; }
-
-/* טאבים */
-.tab-switcher {
-  display: flex;
-  padding: 10px 20px;
-  border-bottom: 1px solid #f0f0f0;
+.header-overlay-text h1 { 
+  font-size: 32px; 
+  margin: 0; 
+  font-weight: 800; 
+  text-shadow: 0 2px 10px rgba(0,0,0,0.3);
 }
 
-.tab-item {
-  flex: 1;
-  padding: 15px;
-  border: none;
-  background: none;
-  font-weight: 700;
-  color: #8e8e93;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-}
-
-.tab-item.active {
-  color: #000;
-  border-bottom: 3px solid #000;
-}
-
-.tab-badge {
-  padding: 2px 9px;
-  border-radius: 12px;
-  font-size: 12px;
-  color: white;
-}
-
-.tab-badge.red { background: #ff3b30; }
-.tab-badge.gray { background: #c7c7cc; color: #555; }
-
-/* אזור גלילה מוגדר */
+/* אזור התוכן הגליל */
 .content-scroll-area {
   flex: 1;
   overflow-y: auto;
-  padding: 15px;
+  padding: 20px;
   background-color: #f8f9fb;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.content-scroll-area::-webkit-scrollbar { display: none; }
+/* כפתור התנתקות מעוצב קצת יותר טוב */
+.logout-footer-btn {
+  padding: 15px;
+  background: none;
+  border: none;
+  color: #8e8e93;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  border-top: 1px solid #f0f0f0;
+}
