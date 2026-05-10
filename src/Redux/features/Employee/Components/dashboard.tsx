@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import * as signalR from "@microsoft/signalr";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -8,10 +8,10 @@ import {
   Badge, IconButton, Box, Typography, Tabs, Tab, Chip
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
-import CircleIcon from '@mui/icons-material/Circle';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import notificationSound from "../../../../assets/Notification.mp3";
 
 import {
   useCompleteRequestMutation,
@@ -26,8 +26,6 @@ import { RequestCard } from "../../Requests/Components/RequestCard";
 import staffHeaderImg from "../../../../assets/doors-pict.jpg";
 import "./dashborad.css";
 
-
-
 export default function Dashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -39,6 +37,12 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState(0);
   const [isAvailable, setIsAvailable] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const isAvailableRef = useRef(isAvailable);
+
+  useEffect(() => {
+    isAvailableRef.current = isAvailable;
+  }, [isAvailable]);
 
   const [takeRequestTrigger] = useTakeRequestMutation();
   const [completeRequestTrigger] = useCompleteRequestMutation();
@@ -55,6 +59,13 @@ export default function Dashboard() {
     navigate("/login");
   };
 
+  const playNotificationSound = () => {
+    const audio = new Audio(notificationSound); 
+    audio.play().catch(() => {
+        // שקט תעשייתי - אם הדפדפן חוסם, פשוט לא יקרה כלום בלי להספיק שגיאות למסוף
+    });
+  };
+
   const toggleAvailability = async () => {
     const newStatus = !isAvailable;
     setIsAvailable(newStatus);
@@ -64,20 +75,17 @@ export default function Dashboard() {
       await updateEmployeeStatus({ id: userId, isAvailable: newStatus }).unwrap();
     } catch (err) {
       setIsAvailable(!newStatus);
-      alert("Failed to update availability");
     }
   };
-
 
   const handleTakeRequest = async (request: any) => {
     const rId = request.requestId || request.id;
     try {
       await takeRequestTrigger({ requestId: rId }).unwrap();
-      
       setMyTasks((prev) => [...prev, { ...request, status: "InProgress" }]);
       setAvailableRequests((prev) => prev.filter((req) => (req.requestId || req.id) !== rId));
     } catch (err: any) {
-      alert(err.data?.message || "Communication error with server");
+      alert(err.data?.message || "Communication error");
     }
   }
 
@@ -101,72 +109,77 @@ export default function Dashboard() {
     }
   };
 
- // אפקט ראשון: עדכון זמן וטיימרים
- useEffect(() => {
-  const interval = setInterval(() => {
-      setNow(Date.now());
-      setCurrentTime(new Date());
-  }, 1000);
-  return () => clearInterval(interval);
-}, []);
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setNow(Date.now());
+        setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-// אפקט שני: טעינת נתונים וחיבור SignalR
-useEffect(() => {
-  // השומר (ProtectedRoute) כבר וידא שיש טוקן, אז אפשר לרוץ קדימה
-  const fetchData = async () => {
-    try {
-      const tasks = await triggerGetMyTasks().unwrap();
-      setMyTasks(tasks.filter((t: any) => t.status === "InProgress"));
-      
-      const available = await triggerGetAvailable().unwrap();
-      setAvailableRequests(available);
-    } catch (err: any) { 
-      // טיפול במקרה שהטוקן פקע תוך כדי עבודה
-      if (err.status === 401) handleLogout(); 
-    }
-  };
+  useEffect(() => {
+    let isMounted = true;
 
-  fetchData();
+    const fetchData = async () => {
+      try {
+        const tasks = await triggerGetMyTasks().unwrap();
+        setMyTasks(tasks.filter((t: any) => t.status === "InProgress"));
+        const available = await triggerGetAvailable().unwrap();
+        setAvailableRequests(available);
+      } catch (err: any) { 
+        if (err.status === 401) handleLogout(); 
+      }
+    };
 
-  // הגדרת חיבור SignalR
-  const connection = new signalR.HubConnectionBuilder()
-    .withUrl("https://localhost:7237/requestHub", { 
-      accessTokenFactory: () => token || "" 
-    })
-    .withAutomaticReconnect()
-    .build();
+    fetchData();
 
-  connection.start()
-    .then(() => {
-      connection.invoke("JoinCategoryGroup", parseInt(categoryId));
-      
-      connection.on("ReceiveNotification", (n: any) => {
-          setAvailableRequests(prev => [...prev, n]);
-      });
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl("https://localhost:7237/requestHub", { 
+        accessTokenFactory: () => token || "" 
+      })
+      .withAutomaticReconnect()
+      .build();
 
-      connection.on("RemoveRequestFromUI", (id: number) => {
-          setAvailableRequests(prev => prev.filter(req => (req.requestId || req.id) !== id));
-      });
-    })
-    .catch(console.error);
+    const startSignalR = async () => {
+        try {
+            await connection.start();
+            if (isMounted) {
+                connection.invoke("JoinCategoryGroup", parseInt(categoryId));
+                
+                connection.on("ReceiveNotification", (n: any) => {
+                    setAvailableRequests(prev => [...prev, n]);
+                    if (isAvailableRef.current) {
+                        playNotificationSound();
+                    }
+                });
 
-  // ניקוי: סגירת החיבור כשהקומפוננטה יורדת מהמסך
-  return () => { 
-    connection.stop(); 
-  };
-}, [token, categoryId]); // הוספנו את categoryId כדי שהחיבור יתעדכן אם הוא משתנה
+                connection.on("RemoveRequestFromUI", (id: number) => {
+                    setAvailableRequests(prev => prev.filter(req => (req.requestId || req.id) !== id));
+                });
+            }
+        } catch (err) {
+            // שגיאות חיבור נשמרות רק בתוך ה-catch בלי הדפסה רועשת
+        }
+    };
+
+    startSignalR();
+
+    return () => { 
+      isMounted = false;
+      if (connection.state === signalR.HubConnectionState.Connected) {
+          connection.stop();
+      }
+    };
+  }, [token, categoryId]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', bgcolor: '#F8F9FA', overflow: 'hidden', direction: 'ltr' }}>
       
-      {/* Hero Section */}
       <Box sx={{ position: 'relative', height: '240px', width: '100%', flexShrink: 0 }}>
         <Box component="img" src={staffHeaderImg} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.7) 100%)', zIndex: 1 }} />
 
-        {/* Top Bar: Bell & Status */}
         <Box sx={{ position: 'absolute', top: 20, left: 20, right: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-            {/* Red Badge for New Requests */}
             <Badge 
                 badgeContent={availableRequests.length} 
                 sx={{ "& .MuiBadge-badge": { backgroundColor: '#FF3B30', color: 'white', fontWeight: 'bold' } }}
@@ -176,7 +189,6 @@ useEffect(() => {
                 </IconButton>
             </Badge>
 
-            {/* Bold Status Chip */}
             <Chip
                 label={isAvailable ? "AVAILABLE" : "UNAVAILABLE"}
                 onClick={toggleAvailability}
@@ -193,7 +205,6 @@ useEffect(() => {
             />
         </Box>
 
-        {/* User Info & Time */}
         <Box sx={{ position: 'absolute', bottom: 25, left: 25, color: 'white', zIndex: 5 }}>
           <Typography variant="h4" sx={{ fontWeight: 800, fontSize: '28px', mb: 0.5 }}>
             Hello {userName},
@@ -216,7 +227,6 @@ useEffect(() => {
         </Box>
       </Box>
 
-      {/* Tabs */}
       <Box sx={{ bgcolor: 'white', borderBottom: '1px solid #E0E4E8', flexShrink: 0 }}>
         <Tabs
           value={activeTab}
@@ -233,7 +243,6 @@ useEffect(() => {
         </Tabs>
       </Box>
 
-      {/* Content */}
       <Box sx={{ flex: 1, overflowY: 'auto', p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {activeTab === 0 ? (
           availableRequests.length > 0 ? (
@@ -267,7 +276,6 @@ useEffect(() => {
         )}
       </Box>
 
-      {/* Logout Footer */}
       <Box sx={{ p: 1.5, bgcolor: 'white', borderTop: '1px solid #E0E4E8' }}>
           <IconButton 
             onClick={handleLogout} 
