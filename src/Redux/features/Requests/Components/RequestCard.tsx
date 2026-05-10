@@ -1,55 +1,47 @@
 import React from 'react';
 import './RequestCard.css';
+import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver'; // אייקון של דמות מדברת
 
-interface RequestCardProps {
-  task: any;
-  now: number;
-  variant: "available" | "inProgress";
-  onTake?: () => void;
-  onComplete?: () => void;
-  onReject?: () => void;
-}
-
-const getRelativeTime = (dateString: string, currentTime: number) => {
-  if (!dateString) return "";
-  const past = new Date(dateString);
-  const diffInMs = currentTime - past.getTime();
-  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-  if (diffInMinutes < 1) return "ממש עכשיו";
-  if (diffInMinutes < 60) return `לפני ${diffInMinutes} דקות`;
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `לפני ${diffInHours} שעות`;
-  return past.toLocaleDateString("he-IL");
-};
-
-export function RequestCard({ task, now, variant, onTake, onComplete, onReject }: RequestCardProps) {
+export function RequestCard({ task, now, variant, onTake, onComplete, onReject }: any) {
   const isAvailable = variant === "available";
   const room = task.roomNumber || task.RoomNumber || "---";
-  const desc = task.description || task.Description || "בקשת שירות";
-  const timeStr = task.updatedAt || task.createdAt || task.CreatedAt || new Date().toISOString();
-
+  const desc = task.description || task.Description || "No description provided";
+  const timeDisplay = "5m ago"; 
   return (
-    <div className={`req-card-wrapper ${variant}`}>
-      <div className="card-main-layout">
-        <div className="card-img-aside">
-           <span className="room-num-display">{room}</span>
+    <div className={`hotel-card-v3 ${variant}`}>
+      <div className="card-top-row">
+        <div className="room-plate">
+          <span className="plate-label">ROOM</span>
+          <span className="plate-number">{room}</span>
         </div>
-        <div className="card-info-area">
-          <div className="card-top-line">
-            <span className="request-type-label">משימה לביצוע</span>
-            <span className="request-time-ago">{getRelativeTime(timeStr, now)}</span>
-          </div>
-          <p className="request-desc-text">{desc}</p>
+        <div className="status-time-group">
+          <span className="task-label">NEW REQUEST</span>
+          <span className="time-label">{timeDisplay}</span>
         </div>
       </div>
-      <div className="card-footer-actions">
+
+      {/* תיבת תוכן עם אייקון "קול קורא" */}
+      <div className="request-content-box">
+        <div className="content-scroll-area">
+          <RecordVoiceOverIcon sx={{ 
+            fontSize: 18, 
+            verticalAlign: 'middle', 
+            marginRight: '8px', 
+            color: '#d4af37', // צבע זהב עדין שתואם לעיצוב
+            opacity: 0.8 
+          }} />
+          {desc}
+        </div>
+      </div>
+
+      <div className="card-actions-row">
         {isAvailable ? (
           <>
-            <button className="action-btn primary-black" onClick={onTake}>קח טיפול</button>
-            <button className="action-btn outline-gray" onClick={onReject}>לא קשור אלי</button>
+            <button className="btn-main accept" onClick={onTake}>Accept Task</button>
+            <button className="btn-side reject" onClick={onReject}>Decline</button>
           </>
         ) : (
-          <button className="action-btn success-green" onClick={onComplete}>סיימתי ✓</button>
+          <button className="btn-main complete" onClick={onComplete}>Mark as Done</button>
         )}
       </div>
     </div>

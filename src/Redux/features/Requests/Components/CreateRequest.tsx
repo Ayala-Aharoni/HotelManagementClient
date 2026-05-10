@@ -11,19 +11,17 @@ export default function SimpleAddRequest() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     const roomId = localStorage.getItem("roomNumber");
     if (!roomId) {
       toast.error("תקלה בזיהוי המכשיר. אנא פנה לקבלה.");
       return;
     }
-  
     if (!description.trim()) {
       toast.error("אופס! שכחת לכתוב מה אתה צריך");
       return; 
     }
-  
-    try {
+    try 
+    {
       await addRequest({ Description: description }).unwrap();
       toast.success("הבקשה נשלחה בהצלחה!");
       setDescription(""); 
@@ -31,7 +29,6 @@ export default function SimpleAddRequest() {
       toast.error(err.data?.message || "משהו השתבש בשליחה...");
     }
   };
-
   return (
     /* ה-Box הראשי שבו אנחנו "הורגים" את הגלגלת */
     <Box sx={{ 
