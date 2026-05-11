@@ -19,6 +19,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 // שאר הייבואים שלך...
 import Login from './Redux/features/Employee/Components/LoginForm'; 
 import RegisterEmployee from './Redux/features/Employee/pages/RegisterForm';
+import EditEmployee from './Redux/features/Employee/pages/EditEmployee'; 
 import Dashboard from './Redux/features/Employee/Components/dashboard'; 
 import SimpleAddRequest from './Redux/features/Requests/Components/CreateRequest';
 import AdminDashboard from './Redux/features/Admin/Components/Admindashboared';
@@ -90,6 +91,14 @@ function App() {
       </ProtectedRoute>
     } 
   />
+  <Route 
+    path="/admin/staff/edit/:id" 
+    element={
+      <ProtectedRoute allowedRole="Admin">
+        <EditEmployee />
+      </ProtectedRoute>
+    } 
+/>
 
   {/* --- עמודי עובד מוגנים (Staff) --- */}
   <Route 

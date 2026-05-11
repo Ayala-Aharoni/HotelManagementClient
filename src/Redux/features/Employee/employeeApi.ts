@@ -49,30 +49,35 @@ export const employeeApi = createApi({
     }),
     
     // --- עדכון עובד עם עדכון אופטימי ---
-    updateEmployee: builder.mutation<void, { id: number; data: Employee }>({
-      query: ({ id, data }) => ({
-        url: `Employee/${id}`,
-        method: "PUT",
-        body: data,
-      }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, "Employee"],
-      async onQueryStarted({ id, data }, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          employeeApi.util.updateQueryData('getAllEmployees', undefined, (draft) => {
-            const employee = draft.find((e) => e.Id === id);
-            if (employee) {
-              Object.assign(employee, data); // מעדכן את התצוגה מיד
-            }
-          })
-        );
-        try {
-          await queryFulfilled;
-        } catch {
-          patchResult.undo(); // מבטל אם נכשל בשרת
-        }
-      },
-    }),
+    // --- עדכון עובד מתוקן ---
+
+
+
     
+updateEmployee: builder.mutation<void, { id: number; data: Employee }>({
+  query: ({ id, data }) => ({
+    url: `Employee/${id}`,
+    method: "PUT",
+    body: data, // ודאי ש-data מכיל את כל השדות שה-API דורש
+  }),
+  invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, "Employee"],
+  async onQueryStarted({ id, data }, { dispatch, queryFulfilled }) {
+    const patchResult = dispatch(
+      employeeApi.util.updateQueryData('getAllEmployees', undefined, (draft) => {
+        // תיקון כאן: שימוש ב-employeeId במקום Id
+        const employee = draft.find((e) => e.employeeId === id);
+        if (employee) {
+          Object.assign(employee, data);
+        }
+      })
+    );
+    try {
+      await queryFulfilled;
+    } catch {
+      patchResult.undo();
+    }
+  },
+}),
     // --- מחיקת עובד עם עדכון אופטימי ---
     deleteEmployee: builder.mutation<void, number>({
       query: (id) => ({
@@ -110,6 +115,9 @@ updateEmployeeStatus: builder.mutation<void, { id: number; isAvailable: boolean 
 }),
 }),
 });
+
+
+
 
 export const {
   useGetAllEmployeesQuery,

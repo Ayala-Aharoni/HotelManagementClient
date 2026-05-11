@@ -1,12 +1,49 @@
-import React from 'react';
-import { Paper, Avatar, Box, Typography, Chip } from '@mui/material';
-// ייבוא בטוח למניעת שגיאות Vite
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import FiberManualRecord from '@mui/icons-material/FiberManualRecord';
-import BusinessCenter from '@mui/icons-material/BusinessCenter'; 
+import React, { useState } from 'react';
+import { 
+  Paper, Avatar, Box, Typography, Chip, IconButton, 
+  Menu, MenuItem 
+} from '@mui/material';
+import { 
+  MoreVert, Edit, Delete, BusinessCenter, FiberManualRecord 
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
-const EmployeeCard = ({ employee, onClick }: { employee: any, onClick: (id: number) => void }) => {
-  const isAvailable = employee.isAviable; 
+interface EmployeeCardProps {
+  employee: any;
+  onClick: (id: number) => void;
+  onDelete: (id: number) => void;
+}
+
+const EmployeeCard = ({ employee, onClick, onDelete }: EmployeeCardProps) => {
+  const navigate = useNavigate();
+  const isAvailable = employee.isAviable;
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  // פתיחת תפריט 3 נקודות
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation(); // מונע פתיחת כרטיס
+    setAnchorEl(event.currentTarget);
+  };
+
+  // סגירת תפריט 3 נקודות
+  const handleCloseMenu = (event?: any) => {
+    if (event?.stopPropagation) event.stopPropagation();
+    setAnchorEl(null);
+  };
+
+  // מעבר לעמוד עריכה במקום פתיחת דיאלוג
+  const handleOpenEdit = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    handleCloseMenu();
+    // ניווט לעמוד העריכה החדש עם ה-ID של העובד
+    navigate(`/admin/staff/edit/${employee.employeeId}`);
+  };
+
+  const handleDelete = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    onDelete(employee.employeeId);
+    handleCloseMenu();
+  };
 
   return (
     <Paper 
@@ -15,27 +52,31 @@ const EmployeeCard = ({ employee, onClick }: { employee: any, onClick: (id: numb
       sx={{ 
         p: 2, mb: 1.5, borderRadius: '20px', display: 'flex', alignItems: 'center',
         cursor: 'pointer', border: '1px solid #f0f0f0', transition: '0.2s',
+        position: 'relative',
         '&:hover': { boxShadow: '0 5px 15px rgba(0,0,0,0.08)', borderColor: '#D4AF37' }
       }}
     >
+      {/* כפתור 3 נקודות */}
+      <IconButton 
+        onClick={handleOpenMenu}
+        sx={{ position: 'absolute', top: 8, right: 8, color: '#ccc', zIndex: 2 }}
+      >
+        <MoreVert fontSize="small" />
+      </IconButton>
+
       <Box sx={{ position: 'relative', mr: 2 }}>
-        <Avatar 
-          sx={{ 
-            width: 50, height: 50, 
-            bgcolor: isAvailable ? '#e8f5e9' : '#ffebee', 
-            color: isAvailable ? '#2e7d32' : '#c62828',
-            fontWeight: 'bold'
-          }}
-        >
+        <Avatar sx={{ 
+          width: 50, height: 50, 
+          bgcolor: isAvailable ? '#e8f5e9' : '#ffebee', 
+          color: isAvailable ? '#2e7d32' : '#c62828' 
+        }}>
           {employee.fullname ? employee.fullname[0].toUpperCase() : '?'}
         </Avatar>
-        <FiberManualRecord 
-          sx={{ 
-            position: 'absolute', bottom: 0, right: 0, fontSize: 12, 
-            color: isAvailable ? '#4caf50' : '#f44336',
-            border: '2px solid white', borderRadius: '50%'
-          }} 
-        />
+        <FiberManualRecord sx={{ 
+          position: 'absolute', bottom: 0, right: 0, fontSize: 12, 
+          color: isAvailable ? '#4caf50' : '#f44336',
+          border: '2px solid white', borderRadius: '50%'
+        }} />
       </Box>
 
       <Box sx={{ flex: 1 }}>
@@ -48,19 +89,23 @@ const EmployeeCard = ({ employee, onClick }: { employee: any, onClick: (id: numb
         </Box>
       </Box>
 
-      <Box sx={{ textAlign: 'right' }}>
+      <Box sx={{ textAlign: 'right', pr: 4 }}>
         <Chip 
           label={isAvailable ? "Available" : "Busy"} 
           size="small"
-          sx={{ 
-            bgcolor: isAvailable ? '#4caf50' : '#f44336', 
-            color: 'white', fontWeight: 'bold', fontSize: '0.65rem', mb: 0.5
-          }}
+          sx={{ bgcolor: isAvailable ? '#4caf50' : '#f44336', color: 'white', fontWeight: 'bold' }}
         />
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <ChevronRight sx={{ color: '#ccc' }} />
-        </Box>
       </Box>
+
+      {/* תפריט אפשרויות */}
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleCloseMenu}>
+        <MenuItem onClick={handleOpenEdit}>
+          <Edit fontSize="small" sx={{ mr: 1 }} /> Edit
+        </MenuItem>
+        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+          <Delete fontSize="small" sx={{ mr: 1 }} /> Delete
+        </MenuItem>
+      </Menu>
     </Paper>
   );
 };
