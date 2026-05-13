@@ -24,13 +24,16 @@ export default function Login() {
     e.preventDefault();
     setErrorMsg(""); 
     try {
+  
       const response = await login({ Email: email, Password: password }).unwrap();
       const token = response?.token || response;
       if (token) {
         dispatch(setLogin({ token }));
         const decoded: any = jwtDecode(token);
         const role = decoded.role || "staff";
-        navigate(role.toLowerCase() === 'admin' ? "/admin/dashboard" : "/staff/dashboard");
+
+        // navigate(role.toLowerCase() === 'admin' ? "/admin/dashboard" : "/staff/dashboard");
+        navigate("/");
       }
     } catch (err: any) {
       setErrorMsg(err.data?.message || "Login failed. Please check your credentials.");

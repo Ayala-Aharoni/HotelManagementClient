@@ -1,123 +1,124 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface Employee {
-  employeeId?: number; 
-  fullname?: string;   
-  email: string;       
-  role?: string;      
+  employeeId?: number;
+  fullname?: string;
+  email: string;
+  role?: string;
   categoryId?: number;
-  isAviable: boolean;
+  isAviable: boolean; // שימי לב שזה תואם ל-DTO שלך (ISAviavle)
 }
 
 export const employeeApi = createApi({
   reducerPath: "employeeApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://localhost:7237/api/" }),
-  // הגדרת "תגיות" - זה עוזר ל-Redux לדעת מתי הנתונים לא רלוונטיים יותר
-  tagTypes: ["Employee"], 
-  
+  // כאן הוספנו את ה-prepareHeaders - זה הלב של העניין
+  baseQuery: fetchBaseQuery({
+    baseUrl: "https://localhost:7237/api/",
+    prepareHeaders: (headers) => {
+      // שליפת הטוקן מה-LocalStorage
+      const token = localStorage.getItem("token");
+
+      // אם יש טוקן, נצרף אותו לכל בקשה שיוצאת
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
+
+  tagTypes: ["Employee"],
+
   endpoints: (builder) => ({
-    
     // קבלת כל העובדים
     getAllEmployees: builder.query<Employee[], void>({
       query: () => "Employee",
-      // מסמנים שקריאה זו מספקת נתונים מסוג Employee
       providesTags: ["Employee"],
     }),
-    
-    
+
+    // קבלת עובד לפי ID
     getEmployeeById: builder.query<Employee, number>({
       query: (id) => `Employee/${id}`,
       providesTags: (result, error, id) => [{ type: "Employee", id }],
     }),
-    
+
+    // רישום עובד חדש
     addEmployee: builder.mutation<void, any>({
       query: (newEmp) => ({
         url: "Employee/Register",
         method: "POST",
         body: newEmp,
       }),
-      // ברגע שנוסף עובד, ה-Tag "מתבטל" וזה גורם ל-getAllEmployees לרוץ מחדש אוטומטית
       invalidatesTags: ["Employee"],
     }),
-    
-    loginEmployee: builder.mutation<any, any>({ 
+
+    // התחברות עובד
+    loginEmployee: builder.mutation<any, any>({
       query: (credentials) => ({
         url: "Employee/Login",
         method: "POST",
         body: credentials,
       }),
     }),
-    
-    // --- עדכון עובד עם עדכון אופטימי ---
-    // --- עדכון עובד מתוקן ---
 
-
-
-    
-updateEmployee: builder.mutation<void, { id: number; data: Employee }>({
-  query: ({ id, data }) => ({
-    url: `Employee/${id}`,
-    method: "PUT",
-    body: data, // ודאי ש-data מכיל את כל השדות שה-API דורש
-  }),
-  invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, "Employee"],
-  async onQueryStarted({ id, data }, { dispatch, queryFulfilled }) {
-    const patchResult = dispatch(
-      employeeApi.util.updateQueryData('getAllEmployees', undefined, (draft) => {
-        // תיקון כאן: שימוש ב-employeeId במקום Id
-        const employee = draft.find((e) => e.employeeId === id);
-        if (employee) {
-          Object.assign(employee, data);
-        }
-      })
-    );
-    try {
-      await queryFulfilled;
-    } catch {
-      patchResult.undo();
-    }
-  },
-}),
-    // --- מחיקת עובד עם עדכון אופטימי ---
-    deleteEmployee: builder.mutation<void, number>({
-      query: (id) => ({
+    // עדכון פרטי עובד
+    updateEmployee: builder.mutation<void, { id: number; data: Employee }>({
+      query: ({ id, data }) => ({
         url: `Employee/${id}`,
-        method: "DELETE",
+        method: "PUT",
+        body: data,
       }),
-      // אומר ל-Redux שהרשימה הכללית כבר לא תקפה
-      invalidatesTags: ["Employee"],
-      async onQueryStarted(id, { dispatch, queryFulfilled }) {
-        // עדכון אופטימי: מוחקים מהקאש מיד
+      invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, "Employee"],
+      async onQueryStarted({ id, data }, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
           employeeApi.util.updateQueryData('getAllEmployees', undefined, (draft) => {
-            return draft.filter((emp) => emp.Id !== id);
+            const employee = draft.find((e) => e.employeeId === id);
+            if (employee) {
+              Object.assign(employee, data);
+            }
           })
         );
         try {
           await queryFulfilled;
         } catch {
-          patchResult.undo(); // מחזיר את העובד למסך אם המחיקה בשרת נכשלה
+          patchResult.undo();
         }
       },
     }),
-    // --- עדכון סטטוס זמינות עובד ---
-  // --- עדכון סטטוס זמינות עובד ---
-// --- עדכון סטטוס זמינות עובד ---
-updateEmployeeStatus: builder.mutation<void, { id: number; isAvailable: boolean }>({
-  query: ({ id, isAvailable }) => ({
-    url: `Employee/${id}/status`,
-    method: "PATCH",
-    // כאן השינוי החשוב! אנחנו שולחים אובייקט שתואם ל-DTO שלך
-    // שימי לב: השם ISAviavle חייב להיות זהה בדיוק למה שכתבת ב-C#
-    body: { ISAviavle: isAvailable }, 
+
+    // מחיקת עובד
+    deleteEmployee: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `Employee/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Employee"],
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          employeeApi.util.updateQueryData('getAllEmployees', undefined, (draft) => {
+            // תיקון: שימוש ב-employeeId במקום Id כדי להתאים לאינטרפייס
+            return draft.filter((emp) => emp.employeeId !== id);
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+    }),
+
+    // עדכון סטטוס זמינות
+    updateEmployeeStatus: builder.mutation<void, { id: number; isAvailable: boolean }>({
+      query: ({ id, isAvailable }) => ({
+        url: `Employee/${id}/status`,
+        method: "PATCH",
+        // שליחה בדיוק לפי ה-DTO ב-C#
+        body: { ISAviavle: isAvailable },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, "Employee"],
+    }),
   }),
-  invalidatesTags: (result, error, { id }) => [{ type: "Employee", id }, "Employee"],
-}),
-}),
 });
-
-
-
 
 export const {
   useGetAllEmployeesQuery,

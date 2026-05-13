@@ -5,12 +5,8 @@ export const requestApi = createApi({
   baseQuery: fetchBaseQuery({ 
     baseUrl: "https://localhost:7237/api/",
     prepareHeaders: (headers) => {
-      // 1. ננסה להביא את הטוקן של החדר (עבור הטאבלט)
       const roomToken = localStorage.getItem("roomToken");
-      // 2. ננסה להביא את הטוקן הרגיל (עבור העובדים)
       const userToken = localStorage.getItem("token");
-    
-      // נשתמש במה שקיים (אם שניהם קיימים, בטאבלט נעדיף את roomToken)
       const finalToken = roomToken || userToken;
     
       if (finalToken) {
@@ -19,53 +15,92 @@ export const requestApi = createApi({
       return headers;
     },
   }),
+  // הגדרת תגית "Request" כדי לנהל את רענון הנתונים האוטומטי
+  tagTypes: ["Request"],
+
   endpoints: (builder) => ({
 
-    addRequest: builder.mutation<void, { Description: string }>({
+    // --- פונקציות ניהול ואדמין ---
+    
+    getAllRequests: builder.query({
+      query: () => "Request",
+      providesTags: ["Request"],
+    }),
+
+    getRequestById: builder.query({
+      query: (id) => `Request/${id}`,
+      providesTags: (result, error, id) => [{ type: "Request", id }],
+    }),
+
+    // פונקציית סיווג ידני על ידי הקבלה
+    transferToCategory: builder.mutation({
+      query: ({ requestId, correctCategoryId }) => ({
+        url: `Request/transfer/${requestId}/${correctCategoryId}`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ["Request"], 
+    }),
+
+    // --- פונקציות חדר / עובד ---
+
+    addRequest: builder.mutation({
       query: (newRequest) => ({
-        url: 'Request', // <--- חזר ליחיד
+        url: 'Request',
         method: 'POST',
         body: newRequest,
       }),
+      invalidatesTags: ["Request"],
     }),
 
-    takeRequest: builder.mutation<void, { requestId: number }>({
+    takeRequest: builder.mutation({
       query: ({ requestId }) => ({
-        url: `Request/take/${requestId}`, // <--- חזר ליחיד
+        url: `Request/take/${requestId}`,
         method: 'POST',
       }),
+      invalidatesTags: ["Request"],
     }),
 
-    completeRequest: builder.mutation<void, { requestId: number }>({
+    completeRequest: builder.mutation({
       query: ({ requestId }) => ({
-        url: `Request/complete/${requestId}`, // <--- חזר ליחיד
+        url: `Request/complete/${requestId}`,
         method: 'POST',
       }),
+      invalidatesTags: ["Request"],
     }),
 
-    // המוטציה החדשה - נשארת כאן אבל עם Request ביחיד
-    rejectToReception: builder.mutation<void, { requestId: number }>({
+    rejectToReception: builder.mutation({
       query: ({ requestId }) => ({
-        url: `Request/${requestId}/reassign-to-reception`, // <--- חזר ליחיד
+        url: `Request/${requestId}/reassign-to-reception`,
         method: 'PUT',
       }),
+      invalidatesTags: ["Request"],
     }),
 
-    getMyTasks: builder.query<any[], void>({
-      query: () => `Request/my-tasks`, // <--- חזר ליחיד
+    // --- שאילתות שליפת נתונים ---
+
+    getMyTasks: builder.query({
+      query: () => `Request/my-tasks`,
+      providesTags: ["Request"],
     }),
 
-    getAvailableRequests: builder.query<any[], void>({
-      query: () => `Request/available`, // <--- חזר ליחיד
+    getAvailableRequests: builder.query({
+      query: () => `Request/available`,
+      providesTags: ["Request"],
     }),
   }),
 });
 
+// ייצוא ההוקים לשימוש בקומפוננטות
 export const {
+  useGetAllRequestsQuery,
+  useGetRequestByIdQuery,
+  useTransferToCategoryMutation, // ההוק החדש לסיווג ידני
   useTakeRequestMutation,
   useCompleteRequestMutation,
   useAddRequestMutation,
   useRejectToReceptionMutation,
+  useGetMyTasksQuery,
+  useGetAvailableRequestsQuery,
   useLazyGetMyTasksQuery,
   useLazyGetAvailableRequestsQuery,
 } = requestApi;
