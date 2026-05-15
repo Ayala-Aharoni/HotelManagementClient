@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Button, FormControl, Select, MenuItem, InputLabel } from '@mui/material';
+import { Box, Button, FormControl, Select, MenuItem, InputLabel } from '@mui/material';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 
 export function ReceptionRequestCard({ task, onAssign }: any) {
@@ -9,14 +9,16 @@ export function ReceptionRequestCard({ task, onAssign }: any) {
   const desc = task.description || task.Description || "No description";
 
   return (
-    <div className="hotel-card-v3 available" style={{ borderLeft: '4px solid #ff9800' }}>
+    // הורדתי את ה-borderLeft הכתום שהיה כאן
+    <div className="hotel-card-v3 available">
       <div className="card-top-row">
         <div className="room-plate">
           <span className="plate-label">ROOM</span>
           <span className="plate-number">{room}</span>
         </div>
         <div className="status-time-group">
-          <span className="task-label" style={{ color: '#ff9800' }}>MANUAL ACTION</span>
+          {/* שיניתי את הצבע של הטקסט לכחול שיתאים לשפה של האפליקציה */}
+          <span className="task-label" style={{ color: '#1A73E8' }}>MANUAL ACTION</span>
         </div>
       </div>
 
@@ -34,6 +36,7 @@ export function ReceptionRequestCard({ task, onAssign }: any) {
             value={selectedCat}
             label="Redirect To..."
             onChange={(e) => setSelectedCat(e.target.value)}
+            sx={{ borderRadius: '8px' }} // הוספת עיגול פינות עדין
           >
             <MenuItem value={1}>Housekeeping</MenuItem>
             <MenuItem value={2}>Maintenance</MenuItem>
@@ -45,7 +48,14 @@ export function ReceptionRequestCard({ task, onAssign }: any) {
           variant="contained" 
           disabled={!selectedCat}
           onClick={() => onAssign(task.requestId || task.id, selectedCat)}
-          sx={{ bgcolor: '#1A73E8', fontWeight: 700, px: 3 }}
+          sx={{ 
+            bgcolor: '#1A73E8', 
+            fontWeight: 700, 
+            px: 3,
+            height: '40px', // גובה אחיד ל-Select
+            borderRadius: '8px',
+            textTransform: 'none' // ביטול ה-Uppercase האוטומטי
+          }}
         >
           Send
         </Button>

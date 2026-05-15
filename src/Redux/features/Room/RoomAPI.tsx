@@ -1,39 +1,70 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// הגדרת הממשק עבור הבקשה (ה-DTO שלנו ב-C#)
-export interface RoomSetupRequest {
+// הגדרת המבנה של החדר כפי שהוא חוזר מה-DTO בשרת
+export interface Room {
+  id: number;
   roomNumber: string;
-}
-
-// התגובה שאנחנו מקבלים מהשרת
-export interface RoomSetupResponse {
-  token: string;
+  isTabletActive: boolean;
 }
 
 export const roomApi = createApi({
   reducerPath: "roomApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://localhost:7237/api/" }),
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: "https://localhost:7237/api/",
+    prepareHeaders: (headers) => {
+      // כאן הקסם קורה: אנחנו מושכים את הטוקן מה-localStorage
+      const token = localStorage.getItem("token");
+      
+      if (token) {
+        // מוסיפים את הטוקן להדר של כל בקשה שיוצאת מהסלייס הזה
+        headers.set('authorization', `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
+  tagTypes: ["Room"], 
+  
   endpoints: (builder) => ({
+    // קבלת כל החדרים
+    getAllRooms: builder.query<Room[], void>({
+      query: () => "Room",
+      providesTags: ["Room"],
+    }),
     
-    // מוטציה לחיבור החדר (Setup)
-    setupRoom: builder.mutation<RoomSetupResponse, RoomSetupRequest>({
-      query: (roomData) => ({
-        url: "Room/setup", // מוודאת שזה ה-Route ב-Controller
+    // הוספת חדר חדש (כאן הקריאה ל-POST שרצית)
+    addRoom: builder.mutation<Room, { roomNumber: string }>({
+      query: (newRoom) => ({
+        url: "Room", // וודאי שזה הנתיב הנכון
         method: "POST",
-        body: roomData,
+        body: newRoom, // כאן עובר האובייקט { roomNumber: "..." }
       }),
-      // כאן אנחנו יכולים לשמור את הטוקן ב-LocalStorage ברגע שהקריאה מצליחה
-      async onQueryStarted(arg, { queryFulfilled }) {
-        try {
-          const { data } = await queryFulfilled;
-          localStorage.setItem("roomToken", data.token);
-          localStorage.setItem("roomNumber", arg.roomNumber);
-        } catch (err) {
-          console.error("Setup failed:", err);
-        }
-      },
+      invalidatesTags: ["Room"],
+    }),
+
+    // פעולת ה-Setup לטאבלט (זו שכבר הייתה לך)
+    setupRoom: builder.mutation<any, any>({
+      query: (setupData) => ({
+        url: "Room/setup",
+        method: "POST",
+        body: setupData,
+      }),
+    }),
+    
+    // מחיקת חדר
+    deleteRoom: builder.mutation<void, number>({
+      query: (id) => ({
+        url: `Room/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Room"],
     }),
   }),
 });
 
-export const { useSetupRoomMutation } = roomApi;
+// ייצוא ה-Hooks לשימוש בקומפוננטות
+export const {
+  useGetAllRoomsQuery,
+  useAddRoomMutation,
+  useSetupRoomMutation,
+  useDeleteRoomMutation,
+} = roomApi;

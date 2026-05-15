@@ -5,9 +5,9 @@ import {
 } from '@mui/material';
 import { 
   People, Category, Assessment, Settings, 
-  NotificationsNone, Assignment, CalendarToday, AccessTime 
+  NotificationsNone, Assignment, CalendarToday, AccessTime,
+  MeetingRoom // האייקון החדש לחדרים
 } from '@mui/icons-material';
-
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
@@ -25,7 +25,7 @@ export default function AdminDashboard() {
     { title: 'Categories', icon: <Category />, path: '/admin/categories', desc: '14 Services' },
     { title: 'Requests', icon: <Assignment />, path: '/admin/requests', desc: 'Manage Status' },
     { title: 'Reports', icon: <Assessment />, path: '/admin/reports', desc: 'Daily & Weekly' },
-    { title: 'Settings', icon: <Settings />, path: '/admin/settings', desc: 'System Config' },
+    { title: 'Rooms', icon: <MeetingRoom />, path: '/admin/rooms', desc: 'Manage Hotel Rooms' }, // הניהול החדש שלך
   ];
 
   // פורמט לתאריך

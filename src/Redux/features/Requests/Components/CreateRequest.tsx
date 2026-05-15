@@ -22,13 +22,18 @@ export default function SimpleAddRequest() {
     }
     try 
     {
-      await addRequest({ Description: description }).unwrap();
+      await addRequest({ 
+        Description: description, 
+        RoomNumber: roomId // roomId מכיל את המספר ששלפנו מהלוקל סטוריז שתי שורות מעל
+      }).unwrap();
       toast.success("הבקשה נשלחה בהצלחה!");
       setDescription(""); 
     } catch (err: any) {
       toast.error(err.data?.message || "משהו השתבש בשליחה...");
     }
   };
+  // שליפת מספר החדר מהזיכרון המקומי, אם לא קיים נציג קווים
+const currentRoom = localStorage.getItem("roomNumber") || "---";
   return (
     /* ה-Box הראשי שבו אנחנו "הורגים" את הגלגלת */
     <Box sx={{ 
@@ -44,6 +49,31 @@ export default function SimpleAddRequest() {
       
       {/* Hero Section */}
       <Box sx={{ position: 'relative', height: '40%', width: '100%', flexShrink: 0 }}>
+        {/* תגית מספר חדר בפינה הימנית העליונה */}
+<Box sx={{ 
+  position: 'absolute', 
+  top: 20, 
+  right: 20, 
+  zIndex: 10,
+  bgcolor: 'rgba(255, 255, 255, 0.2)', // שקיפות עדינה
+  backdropFilter: 'blur(10px)',       // אפקט טשטוש רקע (זכוכית)
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+  borderRadius: '12px',
+  px: 2, 
+  py: 0.5,
+  color: 'white',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+}}>
+  <Typography variant="caption" sx={{ fontSize: '0.65rem', fontWeight: 600, opacity: 0.8, textTransform: 'uppercase' }}>
+    Room
+  </Typography>
+  <Typography variant="h6" sx={{ fontWeight: 800, mt: -0.5 }}>
+    {currentRoom}
+  </Typography>
+</Box>
         <Box 
           component="img" src={staffHeaderImg} 
           sx={{ width: '100%', height: '100%', objectFit: 'cover', borderBottomLeftRadius: '80px' }} 

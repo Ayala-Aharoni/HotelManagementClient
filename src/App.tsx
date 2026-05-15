@@ -24,6 +24,7 @@ import AdminDashboard from './Redux/features/Admin/Components/Admindashboared';
 import Setuptablet from './Redux/features/Room/Components/Setuptablet'; 
 import EmployeeList from './Redux/features/Employee/pages/employeelist' ;
 import CategoriesPage from './Redux/features/Category/Components/CategoryManagement.tsx';  
+import RoomManagement from './Redux/features/Room/Components/EditRoom';  
 
 function App() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
@@ -46,6 +47,7 @@ function App() {
             <Route path="/staff/login" element={<Login />} />
 
             {/* --- עמודי מנהל מוגנים (Admin) --- */}
+   
             <Route 
               path="/admin/dashboard" 
               element={
@@ -70,6 +72,15 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            <Route 
+  path="/admin/rooms" 
+  element={
+    <ProtectedRoute allowedRole="admin">
+      <RoomManagement />
+    </ProtectedRoute>
+  } 
+/>
+          
             <Route 
               path="/admin/register-employee" 
               element={
