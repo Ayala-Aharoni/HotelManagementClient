@@ -25,7 +25,7 @@ import Setuptablet from './Redux/features/Room/Components/Setuptablet';
 import EmployeeList from './Redux/features/Employee/pages/employeelist' ;
 import CategoriesPage from './Redux/features/Category/Components/CategoryManagement.tsx';  
 import RoomManagement from './Redux/features/Room/Components/EditRoom';  
-
+import RequstsManagment from './Redux/features/Requests/Components/RequestsManegment';
 function App() {
   const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const isTabletSetup = !!localStorage.getItem("roomToken");
@@ -47,7 +47,19 @@ function App() {
             <Route path="/staff/login" element={<Login />} />
 
             {/* --- עמודי מנהל מוגנים (Admin) --- */}
-   
+
+
+            <Route 
+              path="/admin/requests" 
+              element={
+                <ProtectedRoute allowedRole="Admin">
+                  <RequstsManagment />
+                </ProtectedRoute>
+              } 
+            />
+
+
+
             <Route 
               path="/admin/dashboard" 
               element={

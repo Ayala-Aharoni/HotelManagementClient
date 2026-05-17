@@ -4,8 +4,10 @@ import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver'; // איי
 
 
 
-export function RequestCard({ task, now, variant, onTake, onComplete, onReject }: any) {
+export function RequestCard({ task, now, variant, onTake, onComplete, onReject,readOnly = false }: any) {
+  // console.log("Task data in card:", task);
   const isAvailable = variant === "available";
+
   const room = task.roomNumber || task.RoomNumber || "---";
   const desc = task.description || task.Description || "No description provided";
    
@@ -61,16 +63,18 @@ export function RequestCard({ task, now, variant, onTake, onComplete, onReject }
         </div>
       </div>
 
-      <div className="card-actions-row">
-        {isAvailable ? (
-          <>
-            <button className="btn-main accept" onClick={onTake}>Accept Task</button>
-            <button className="btn-side reject" onClick={onReject}>Decline</button>
-          </>
-        ) : (
-          <button className="btn-main complete" onClick={onComplete}>Mark as Done</button>
-        )}
-      </div>
+      {!readOnly && (
+        <div className="card-actions-row">
+          {isAvailable ? (
+            <>
+              <button className="btn-main accept" onClick={onTake}>Accept Task</button>
+              <button className="btn-side reject" onClick={onReject}>Decline</button>
+            </>
+          ) : (
+            <button className="btn-main complete" onClick={onComplete}>Mark as Done</button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
